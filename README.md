@@ -62,7 +62,7 @@ implement that:
 
 # Building
 
-This project is built using Ruby 2.3+, Rake and Bundler. RSpec is used for unit tests and SimpleCov
+This project is built using Ruby 2.2+, Rake and Bundler. RSpec is used for unit tests and SimpleCov
 is utilized for test coverage.
 
 # Availability
