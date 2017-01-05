@@ -189,29 +189,59 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
   end
 
   describe '#expired?' do
-    # Set current_time back 301 seconds, such that expires_at will be beyond default fudge_sec
-    let!(:current_time) { Time.at(Time.now.to_i - 301) }
-    let!(:expires_at) { Time.at(current_time.to_i + 1) }
-    let!(:access_token) do
-      Cerner::OAuth1a::AccessToken.new(accessor_secret: 'ACCESSOR SECRET',
-                                       consumer_key: 'CONSUMER KEY',
-                                       expires_at: expires_at,
-                                       nonce: 'NONCE',
-                                       timestamp: current_time,
-                                       token: 'TOKEN',
-                                       token_secret: 'TOKEN SECRET')
-    end
 
-    it 'is expired with no arguments' do
+    it 'is expired with no arguments, because of fudge_sec' do
+      access_token = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: 'ACCESSOR SECRET',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: Time.now.to_i,
+        nonce: 'NONCE',
+        timestamp: Time.now.to_i,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET')
+
       expect(access_token.expired?).to be true
     end
 
-    it 'is expired with fudge of 0' do
-      expect(access_token.expired?(fudge_sec: 0)).to be true
+    it 'is not expired with fudge of large negative fudge_sec' do
+      access_token = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: 'ACCESSOR SECRET',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: Time.now.to_i,
+        nonce: 'NONCE',
+        timestamp: Time.now.to_i,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET')
+
+      expect(access_token.expired?(fudge_sec: -300)).to be false
     end
 
     it 'is expired with Time argument' do
+      access_token = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: 'ACCESSOR SECRET',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: Time.now.to_i,
+        nonce: 'NONCE',
+        timestamp: Time.now.to_i,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET')
+
       expect(access_token.expired?(now: Time.at(Time.now.to_i + 10))).to be true
+    end
+
+    it 'is expired when expires_at and now are equal and fudge_sec of 0' do
+      fixed_time = Time.now
+
+      access_token = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: 'ACCESSOR SECRET',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: fixed_time,
+        nonce: 'NONCE',
+        timestamp: fixed_time,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET')
+
+      expect(access_token.expired?(now: fixed_time, fudge_sec: 0)).to be true
     end
   end
 

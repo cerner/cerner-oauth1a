@@ -73,16 +73,16 @@ module Cerner
 
       # Public: Check whether the access token has expired. By default (with no arguments),
       # the method checks whether the token has expired based on the current time and a fudge
-      # factor of 300 seconds. Non-default argument values can be used to see whether the
+      # factor of 300 seconds (5 minutes). Non-default argument values can be used to see whether the
       # access token has expired at a different time and with a different fudge factor.
       #
       # now       - A Time instance to check the expiration information against. Default is Time.now.
-      # fudge_sec - The number of seconds to remove from 'now' to adjust the comparion.
+      # fudge_sec - The number of seconds to remove from #expires_at to adjust the comparison.
       #
       # Returns true if the access token as expired; false otherwise
       def expired?(now: Time.now, fudge_sec: 300)
         now = convert_to_time(now)
-        (now.tv_sec - fudge_sec) >= expires_at.tv_sec
+        now.tv_sec >= expires_at.tv_sec - fudge_sec
       end
 
       # Public: Compare this to other based on attributes.
