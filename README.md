@@ -1,5 +1,7 @@
 # Cerner OAuth 1.0a Client Library
 
+[![Build Status](https://api.travis-ci.org/cerner/cerner-oauth1a.svg)][https://travis-ci.org/cerner/cerner-oauth1a]
+
 This RubyGem is a client library for interacting with the Cerner OAuth 1.0a provider to
 participate in two-legged (B2B) authentication. The goal of this project is to provide a zero-dependency Ruby library that simply and compactly implements the client aspects of
 Cerner OAuth 1.0a variant of the OAuth 1.0a B2B workflow.
