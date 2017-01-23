@@ -2,6 +2,7 @@
 
 [![Build Status](https://api.travis-ci.org/cerner/cerner-oauth1a.svg)](https://travis-ci.org/cerner/cerner-oauth1a)
 [![Gem Version](http://img.shields.io/gem/v/cerner-oauth1a.svg)](https://rubygems.org/gems/ccerner-oauth1a)
+[![Code Climate](http://img.shields.io/codeclimate/github/cerner/cerner-oauth1a.svg)](https://codeclimate.com/github/cerner/cerner-oauth1a)
 [![Dependencies Status](http://img.shields.io/gemnasium/cerner/cerner-oauth1a.svg)](https://gemnasium.com/cerner/cerner-oauth1a)
 
 This RubyGem is a client library for interacting with the Cerner OAuth 1.0a provider to
