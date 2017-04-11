@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/version'
@@ -29,7 +31,8 @@ module Cerner
       #             :open_timeout     - An object responding to to_i. Used to set the timeout, in seconds,
       #                                 for opening HTTP connections to the Access Token service (optional, default: 5).
       #             :read_timeout     - An object responding to to_i. Used to set the timeout, in seconds,
-      #                                 for reading data from HTTP connections to the Access Token service (optional, default: 5).
+      #                                 for reading data from HTTP connections to the Access Token service (optional,
+      #                                 default: 5).
       #
       # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if access_token_url is
       #                      an invalid URI.
@@ -63,14 +66,14 @@ module Cerner
         nonce = generate_nonce
         timestamp = generate_timestamp
         params = [
-                  [:oauth_consumer_key, @consumer_key],
-                  [:oauth_signature_method, 'PLAINTEXT'],
-                  [:oauth_version, '1.0'],
-                  [:oauth_timestamp, timestamp],
-                  [:oauth_nonce, nonce],
-                  [:oauth_signature, "#{@consumer_secret}&"],
-                  [:oauth_accessor_secret, accessor_secret]
-                 ]
+          [:oauth_consumer_key, @consumer_key],
+          [:oauth_signature_method, 'PLAINTEXT'],
+          [:oauth_version, '1.0'],
+          [:oauth_timestamp, timestamp],
+          [:oauth_nonce, nonce],
+          [:oauth_signature, "#{@consumer_secret}&"],
+          [:oauth_accessor_secret, accessor_secret]
+        ]
         # set the POST's body as a URL form-encoded string
         request.set_form(params, MIME_WWW_FORM_URL_ENCODED, charset: 'UTF-8')
 
@@ -163,7 +166,7 @@ module Cerner
         else
           begin
             uri = URI(access_token_url)
-          rescue URI::InvalidURIError => e
+          rescue URI::InvalidURIError
             # raise argument error with cause
             raise ArgumentError, 'access_token_url is invalid'
           end

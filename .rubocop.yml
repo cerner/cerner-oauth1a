@@ -1,0 +1,14 @@
+AllCops:
+  Exclude:
+    - cerner-oauth1a.gemspec
+    - Gemfile
+    - Rakefile
+
+LineLength:
+  Max: 120
+
+EmptyLinesAroundModuleBody:
+  Enabled: false
+
+MethodLength:
+  Max: 25

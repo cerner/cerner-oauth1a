@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'webrick'
 
 class MockAccessTokenServer
@@ -7,7 +9,7 @@ class MockAccessTokenServer
       @response = response
     end
 
-    def do_POST(request, response)
+    def do_POST(_request, response) # rubocop:disable Style/MethodName
       response.status = @response[:status]
       response['Content-Type'] = @response[:content_type]
       response['WWW-Authenticate'] = @response[:www_authenticate] if @response[:www_authenticate]
@@ -42,10 +44,10 @@ class MockAccessTokenServer
   end
 
   def shutdown
-    if @pid
-      Process.kill('TERM', @pid)
-      Process.wait(@pid)
-      @pid = nil
-    end
+    return unless @pid
+
+    Process.kill('TERM', @pid)
+    Process.wait(@pid)
+    @pid = nil
   end
 end

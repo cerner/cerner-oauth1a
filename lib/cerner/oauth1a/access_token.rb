@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Cerner
   module OAuth1a
 
@@ -68,7 +70,8 @@ module Cerner
           oauth_timestamp: @timestamp.tv_sec,
           oauth_token: @token
         }
-        @authorization_header = "OAuth " + tuples.map { |k, v| "#{k}=\"#{URI.encode_www_form_component(v)}\"" }.join(', ')
+        @authorization_header =
+          'OAuth ' + tuples.map { |k, v| "#{k}=\"#{URI.encode_www_form_component(v)}\"" }.join(', ')
       end
 
       # Public: Check whether the access token has expired. By default (with no arguments),

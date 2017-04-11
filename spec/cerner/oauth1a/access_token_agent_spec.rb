@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 require 'mock_access_token_server'
 
@@ -5,15 +7,21 @@ require 'cerner/oauth1a/access_token_agent'
 require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/oauth_error'
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
   describe '#retrieve' do
     before(:all) do
-      @server = MockAccessTokenServer.new([
+      @server = MockAccessTokenServer.new(
+        [
           {
             path: '/oauth/access_success', response: {
               status: 200,
               content_type: 'application/x-www-form-urlencoded',
-              body: 'oauth_token=TOKEN&oauth_token_secret=TOKEN%20SECRET&oauth_session_handle=SESSION&oauth_expires_in=3600&oauth_authorization_expires_in=86400'
+              body: 'oauth_token=TOKEN'\
+                '&oauth_token_secret=TOKEN%20SECRET'\
+                '&oauth_session_handle=SESSION'\
+                '&oauth_expires_in=3600'\
+                '&oauth_authorization_expires_in=86400'
             }
           },
           {
@@ -24,7 +32,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
               body: 'TOKEN REJECTED'
             }
           }
-        ])
+        ]
+      )
       @server.startup
     end
 
@@ -34,10 +43,10 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
 
     it 'gets a valid access token' do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(
-          access_token_url: "#{@server.base_uri}/oauth/access_success",
-          consumer_key: 'CONSUMER KEY',
-          consumer_secret: 'CONSUMER SECRET'
-        )
+        access_token_url: "#{@server.base_uri}/oauth/access_success",
+        consumer_key: 'CONSUMER KEY',
+        consumer_secret: 'CONSUMER SECRET'
+      )
       access_token = agent.retrieve
       expect(access_token.consumer_key).to eq 'CONSUMER KEY'
       expect(access_token.token).to eq 'TOKEN'
@@ -46,13 +55,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
 
     it 'throw OAuthError with token_rejected oauth_problem' do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(
-          access_token_url: "#{@server.base_uri}/oauth/access_token_rejected",
-          consumer_key: 'CONSUMER KEY',
-          consumer_secret: 'CONSUMER SECRET'
-        )
-      expect {
-        access_token = agent.retrieve
-      }.to raise_error(Cerner::OAuth1a::OAuthError, /token_rejected/)
+        access_token_url: "#{@server.base_uri}/oauth/access_token_rejected",
+        consumer_key: 'CONSUMER KEY',
+        consumer_secret: 'CONSUMER SECRET'
+      )
+      expect { agent.retrieve }.to raise_error(Cerner::OAuth1a::OAuthError, /token_rejected/)
     end
   end
 
@@ -61,18 +68,18 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
                                                     consumer_key: 'KEY',
                                                     consumer_secret: 'SECRET',
-                                                    open_timeout: "10",
-                                                    read_timeout: "15")
-      expect(agent.instance_variable_get :@open_timeout).to eq(10)
-      expect(agent.instance_variable_get :@read_timeout).to eq(15)
+                                                    open_timeout: '10',
+                                                    read_timeout: '15')
+      expect(agent.instance_variable_get(:@open_timeout)).to eq(10)
+      expect(agent.instance_variable_get(:@read_timeout)).to eq(15)
     end
 
     it 'sets the open_timeout and read_timeout as default' do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
                                                     consumer_key: 'KEY',
                                                     consumer_secret: 'SECRET')
-      expect(agent.instance_variable_get :@open_timeout).to eq(5)
-      expect(agent.instance_variable_get :@read_timeout).to eq(5)
+      expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
+      expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
     end
 
     it 'sets the open_timeout and read_timeout as default when nil' do
@@ -81,8 +88,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
                                                     consumer_secret: 'SECRET',
                                                     open_timeout: nil,
                                                     read_timeout: nil)
-      expect(agent.instance_variable_get :@open_timeout).to eq(5)
-      expect(agent.instance_variable_get :@read_timeout).to eq(5)
+      expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
+      expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
     end
 
     it 'sets the consumer_key' do
@@ -107,7 +114,6 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       expect(agent.consumer_secret).to eq('SECRET')
     end
 
-
     it 'requires a non-nil consumer_secret' do
       expect {
         Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
@@ -117,18 +123,18 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
     end
 
     it 'converts String to URI for access_token_url' do
-        agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                      consumer_key: 'KEY',
-                                                      consumer_secret: 'SECRET')
-        expect(agent.access_token_url).to eq(URI('http://localhost'))
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
+                                                    consumer_key: 'KEY',
+                                                    consumer_secret: 'SECRET')
+      expect(agent.access_token_url).to eq(URI('http://localhost'))
     end
 
     it 'accepts a URI for access_token_url' do
-        fixture = URI('http://localhost')
-        agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: fixture,
-                                                      consumer_key: 'KEY',
-                                                      consumer_secret: 'SECRET')
-        expect(agent.access_token_url).to be(fixture)
+      fixture = URI('http://localhost')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: fixture,
+                                                    consumer_key: 'KEY',
+                                                    consumer_secret: 'SECRET')
+      expect(agent.access_token_url).to be(fixture)
     end
 
     it 'requires an HTTP URL for access_token_url' do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Cerner
   module OAuth1a
     # Public: An OAuth-specific error.
@@ -14,7 +16,7 @@ module Cerner
       # message            - A descriptive message, passed to the super class.
       # http_response_code - The HTTP response code associated with the error. Optional.
       # oauth_problem      - The OAuth Problem string associated with the error. Optional.
-      def initialize(message, http_response_code=nil, oauth_problem=nil)
+      def initialize(message, http_response_code = nil, oauth_problem = nil)
         @http_response_code = http_response_code
         @oauth_problem = oauth_problem
         message += " HTTP #{@http_response_code}" if @http_response_code

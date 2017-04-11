@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 require 'cerner/oauth1a/access_token'
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::AccessToken do
   describe '#to_h' do
     it 'returns a Hash of attributes' do
@@ -39,7 +42,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
     context 'returns true' do
       it 'when compared to self' do
         expect(access_token == access_token).to be true
-        expect(access_token.eql? access_token).to be true
+        expect(access_token.eql?(access_token)).to be true
       end
 
       it 'when two instances have the same attributes' do
@@ -53,7 +56,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
 
         expect(access_token.object_id).not_to eq(access_token2.object_id)
         expect(access_token == access_token2).to be true
-        expect(access_token.eql? access_token2).to be true
+        expect(access_token.eql?(access_token2)).to be true
       end
 
       it 'when two instances have the same attributes and authorization_header is built' do
@@ -68,7 +71,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(access_token2.authorization_header).not_to be nil
         expect(access_token.object_id).not_to eq(access_token2.object_id)
         expect(access_token == access_token2).to be true
-        expect(access_token.eql? access_token2).to be true
+        expect(access_token.eql?(access_token2)).to be true
       end
     end
 
@@ -82,7 +85,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when consumer_key varies' do
@@ -94,7 +97,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when expires_at varies' do
@@ -106,7 +109,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when nonce varies' do
@@ -118,7 +121,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when timestamp varies' do
@@ -130,7 +133,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when token varies' do
@@ -142,7 +145,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'NOT TOKEN',
                                                          token_secret: 'TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
 
       it 'when token_secret varies' do
@@ -154,9 +157,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                                          token: 'TOKEN',
                                                          token_secret: 'NOT TOKEN SECRET')
         expect(access_token == access_token2).to be false
-        expect(access_token.eql? access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
       end
-
     end
   end
 
@@ -189,42 +191,38 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
   end
 
   describe '#expired?' do
-
     it 'is expired with no arguments, because of fudge_sec' do
-      access_token = Cerner::OAuth1a::AccessToken.new(
-        accessor_secret: 'ACCESSOR SECRET',
-        consumer_key: 'CONSUMER KEY',
-        expires_at: Time.now.to_i,
-        nonce: 'NONCE',
-        timestamp: Time.now.to_i,
-        token: 'TOKEN',
-        token_secret: 'TOKEN SECRET')
+      access_token = Cerner::OAuth1a::AccessToken.new(accessor_secret: 'ACCESSOR SECRET',
+                                                      consumer_key: 'CONSUMER KEY',
+                                                      expires_at: Time.now.to_i,
+                                                      nonce: 'NONCE',
+                                                      timestamp: Time.now.to_i,
+                                                      token: 'TOKEN',
+                                                      token_secret: 'TOKEN SECRET')
 
       expect(access_token.expired?).to be true
     end
 
     it 'is not expired with fudge of large negative fudge_sec' do
-      access_token = Cerner::OAuth1a::AccessToken.new(
-        accessor_secret: 'ACCESSOR SECRET',
-        consumer_key: 'CONSUMER KEY',
-        expires_at: Time.now.to_i,
-        nonce: 'NONCE',
-        timestamp: Time.now.to_i,
-        token: 'TOKEN',
-        token_secret: 'TOKEN SECRET')
+      access_token = Cerner::OAuth1a::AccessToken.new(accessor_secret: 'ACCESSOR SECRET',
+                                                      consumer_key: 'CONSUMER KEY',
+                                                      expires_at: Time.now.to_i,
+                                                      nonce: 'NONCE',
+                                                      timestamp: Time.now.to_i,
+                                                      token: 'TOKEN',
+                                                      token_secret: 'TOKEN SECRET')
 
       expect(access_token.expired?(fudge_sec: -300)).to be false
     end
 
     it 'is expired with Time argument' do
-      access_token = Cerner::OAuth1a::AccessToken.new(
-        accessor_secret: 'ACCESSOR SECRET',
-        consumer_key: 'CONSUMER KEY',
-        expires_at: Time.now.to_i,
-        nonce: 'NONCE',
-        timestamp: Time.now.to_i,
-        token: 'TOKEN',
-        token_secret: 'TOKEN SECRET')
+      access_token = Cerner::OAuth1a::AccessToken.new(accessor_secret: 'ACCESSOR SECRET',
+                                                      consumer_key: 'CONSUMER KEY',
+                                                      expires_at: Time.now.to_i,
+                                                      nonce: 'NONCE',
+                                                      timestamp: Time.now.to_i,
+                                                      token: 'TOKEN',
+                                                      token_secret: 'TOKEN SECRET')
 
       expect(access_token.expired?(now: Time.at(Time.now.to_i + 10))).to be true
     end
@@ -232,14 +230,13 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
     it 'is expired when expires_at and now are equal and fudge_sec of 0' do
       fixed_time = Time.now
 
-      access_token = Cerner::OAuth1a::AccessToken.new(
-        accessor_secret: 'ACCESSOR SECRET',
-        consumer_key: 'CONSUMER KEY',
-        expires_at: fixed_time,
-        nonce: 'NONCE',
-        timestamp: fixed_time,
-        token: 'TOKEN',
-        token_secret: 'TOKEN SECRET')
+      access_token = Cerner::OAuth1a::AccessToken.new(accessor_secret: 'ACCESSOR SECRET',
+                                                      consumer_key: 'CONSUMER KEY',
+                                                      expires_at: fixed_time,
+                                                      nonce: 'NONCE',
+                                                      timestamp: fixed_time,
+                                                      token: 'TOKEN',
+                                                      token_secret: 'TOKEN SECRET')
 
       expect(access_token.expired?(now: fixed_time, fudge_sec: 0)).to be true
     end
@@ -279,7 +276,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: 'TOKEN',
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /accessor_secret/)
+      }.to raise_error(ArgumentError, /accessor_secret/)
     end
 
     it 'requires a non-nil consumer_key' do
@@ -291,7 +288,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: 'TOKEN',
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /consumer_key/)
+      }.to raise_error(ArgumentError, /consumer_key/)
     end
 
     it 'requires a non-nil expires_at' do
@@ -303,7 +300,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: 'TOKEN',
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /expires_at/)
+      }.to raise_error(ArgumentError, /expires_at/)
     end
 
     it 'requires a non-nil nonce' do
@@ -315,7 +312,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: 'TOKEN',
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /nonce/)
+      }.to raise_error(ArgumentError, /nonce/)
     end
 
     it 'requires a non-nil timestamp' do
@@ -327,7 +324,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: nil,
                                          token: 'TOKEN',
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /timestamp/)
+      }.to raise_error(ArgumentError, /timestamp/)
     end
 
     it 'requires a non-nil token' do
@@ -339,7 +336,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: nil,
                                          token_secret: 'TOKEN SECRET')
-             }.to raise_error(ArgumentError, /token/)
+      }.to raise_error(ArgumentError, /token/)
     end
 
     it 'requires a non-nil token_secret' do
@@ -351,7 +348,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
                                          timestamp: Time.now.utc,
                                          token: 'TOKEN',
                                          token_secret: nil)
-             }.to raise_error(ArgumentError, /token_secret/)
+      }.to raise_error(ArgumentError, /token_secret/)
     end
   end
 end
