@@ -3,12 +3,15 @@ AllCops:
     - cerner-oauth1a.gemspec
     - Gemfile
     - Rakefile
-
-LineLength:
-  Max: 120
-
+AbcSize:
+  Max: 18
+ClassLength:
+  Max: 200
 EmptyLinesAroundModuleBody:
   Enabled: false
-
+LineLength:
+  Max: 120
 MethodLength:
   Max: 25
+ParameterLists:
+  Max: 10

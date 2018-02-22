@@ -36,3 +36,4 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
     end
   end
 end
+# rubocop:enable Metrics/BlockLength

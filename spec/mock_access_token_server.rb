@@ -9,6 +9,10 @@ class MockAccessTokenServer
       @response = response
     end
 
+    def do_GET(request, response) # rubocop:disable Style/MethodName
+      do_POST(request, response)
+    end
+
     def do_POST(_request, response) # rubocop:disable Style/MethodName
       response.status = @response[:status]
       response['Content-Type'] = @response[:content_type]
@@ -22,6 +26,7 @@ class MockAccessTokenServer
     paths_and_responses.each do |path_and_response|
       @http_server.mount(path_and_response[:path], Servlet, path_and_response[:response])
     end
+    @pid = nil
   end
 
   def base_uri
