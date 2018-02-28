@@ -4,6 +4,7 @@ require 'base64'
 require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/keys'
 require 'cerner/oauth1a/oauth_error'
+require 'cerner/oauth1a/cache'
 require 'cerner/oauth1a/protocol'
 require 'cerner/oauth1a/version'
 require 'json'
@@ -27,19 +28,41 @@ module Cerner
 
       # Public: Constructs an instance of the agent.
       #
-      # arguments - The keyword arguments of the method:
-      #             :access_token_url - The String or URI of the Access Token service endpoint.
-      #             :consumer_key     - The String of the Consumer Key of the account.
-      #             :consumer_secret  - The String of the Consumer Secret of the account.
-      #             :open_timeout     - An object responding to to_i. Used to set the timeout, in seconds,
-      #                                 for opening HTTP connections to the Access Token service (optional, default: 5).
-      #             :read_timeout     - An object responding to to_i. Used to set the timeout, in seconds,
-      #                                 for reading data from HTTP connections to the Access Token service (optional,
-      #                                 default: 5).
+      # Caching - By default, AccessToken and Keys instances are maintained in a small, constrained
+      # memory cache used by #retrieve and #retrieve_keys, respectively.
       #
-      # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if access_token_url is
-      #                      an invalid URI.
-      def initialize(access_token_url:, consumer_key:, consumer_secret:, open_timeout: 5, read_timeout: 5)
+      # The AccessToken cache keeps a maximum of 5 entries and prunes them when they expire. As the
+      # cache is based on the #consumer_key and the 'principal' parameter, the cache has limited
+      # effect. It's strongly suggested that AccessToken's be cached independently, as well.
+      #
+      # The Keys cache keeps a maximum of 10 entries and prunes them 24 hours after retrieval.
+      #
+      # arguments - The keyword arguments of the method:
+      #             :access_token_url    - The String or URI of the Access Token service endpoint.
+      #             :consumer_key        - The String of the Consumer Key of the account.
+      #             :consumer_secret     - The String of the Consumer Secret of the account.
+      #             :open_timeout        - An object responding to to_i. Used to set the timeout, in
+      #                                    seconds, for opening HTTP connections to the Access Token
+      #                                    service (optional, default: 5).
+      #             :read_timeout        - An object responding to to_i. Used to set the timeout, in
+      #                                    seconds, for reading data from HTTP connections to the
+      #                                    Access Token service (optional, default: 5).
+      #             :cache_keys          - A Boolean for configuring Keys caching within
+      #                                    #retrieve_keys. (optional, default: true)
+      #             :cache_access_tokens - A Boolean for configuring AccessToken caching within
+      #                                    #retrieve. (optional, default: true)
+      #
+      # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if
+      #                      access_token_url is an invalid URI.
+      def initialize(
+        access_token_url:,
+        consumer_key:,
+        consumer_secret:,
+        open_timeout: 5,
+        read_timeout: 5,
+        cache_keys: true,
+        cache_access_tokens: true
+      )
         raise ArgumentError, 'consumer_key is nil' unless consumer_key
         raise ArgumentError, 'consumer_secret is nil' unless consumer_secret
 
@@ -50,6 +73,9 @@ module Cerner
 
         @open_timeout = (open_timeout ? open_timeout.to_i : 5)
         @read_timeout = (read_timeout ? read_timeout.to_i : 5)
+
+        @keys_cache = cache_keys ? Cache.new(max: 10) : nil
+        @access_token_cache = cache_access_tokens ? Cache.new(max: 5) : nil
       end
 
       # Public: Retrieves the service provider keys from the configured Access Token service endpoint
@@ -67,9 +93,16 @@ module Cerner
       def retrieve_keys(keys_version)
         raise ArgumentError, 'keys_version is nil' unless keys_version
 
+        if @keys_cache
+          cache_entry = @keys_cache.get(keys_version)
+          return cache_entry.value if cache_entry
+        end
+
         request = retrieve_keys_prepare_request(keys_version)
         response = http_client.request(request)
-        retrieve_keys_handle_response(keys_version, response)
+        keys = retrieve_keys_handle_response(keys_version, response)
+        @keys_cache&.put(keys_version, Cache::KeysEntry.new(keys, Cache::TWENTY_FOUR_HOURS))
+        keys
       end
 
       # Public: Retrieves an AccessToken from the configured Access Token service endpoint (#access_token_url).
@@ -83,6 +116,12 @@ module Cerner
       # Raises OAuthError for any functional errors returned within an HTTP 200 response.
       # Raises StandardError sub-classes for any issues interacting with the service, such as networking issues.
       def retrieve(principal = nil)
+        cache_key = "#{@consumer_key}&#{principal}"
+        if @access_token_cache
+          cache_entry = @access_token_cache.get(cache_key)
+          return cache_entry.value if cache_entry
+        end
+
         # generate token request info
         nonce = generate_nonce
         timestamp = generate_timestamp
@@ -90,7 +129,9 @@ module Cerner
 
         request = retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
         response = http_client.request(request)
-        retrieve_handle_response(response, timestamp, nonce, accessor_secret)
+        access_token = retrieve_handle_response(response, timestamp, nonce, accessor_secret)
+        @access_token_cache&.put(cache_key, Cache::AccessTokenEntry.new(access_token))
+        access_token
       end
 
       # Public: Generate an Accessor Secret for invocations of the Access Token service.
