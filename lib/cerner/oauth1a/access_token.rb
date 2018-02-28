@@ -44,7 +44,7 @@ module Cerner
           consumer_key: consumer_key,
           nonce: nonce,
           timestamp: timestamp,
-          token: tokens,
+          token: token,
           signature_method: signature_method,
           signature: signature
         )
