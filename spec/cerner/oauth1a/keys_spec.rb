@@ -7,7 +7,6 @@ require 'cerner/oauth1a/keys'
 require 'openssl'
 require 'uri'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::Keys do
   describe '#initialize' do
     it 'raises ArgumentError on nil version' do
@@ -176,4 +175,3 @@ RSpec.describe Cerner::OAuth1a::Keys do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

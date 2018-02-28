@@ -9,7 +9,6 @@ require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/oauth_error'
 require 'json'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
   describe '#retrieve_keys' do
     before(:all) do
@@ -232,4 +231,3 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

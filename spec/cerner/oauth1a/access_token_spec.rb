@@ -4,7 +4,6 @@ require 'spec_helper'
 
 require 'cerner/oauth1a/access_token'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::AccessToken do
   describe '.from_authorization_header' do
     context 'raises error' do
@@ -596,6 +595,17 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
   end
 
   describe '#initialize' do
+    it 'massages signature_method to PLAINTEXT when nil' do
+      access_token = Cerner::OAuth1a::AccessToken.new(
+        consumer_key: 'CONSUMER KEY',
+        nonce: 'NONCE',
+        timestamp: Time.now,
+        token: 'TOKEN',
+        signature_method: nil
+      )
+      expect(access_token.signature_method).to eq 'PLAINTEXT'
+    end
+
     it 'converts Integer to Time for expires_at' do
       fixture = Time.at(Time.now.to_i + 60)
       access_token = Cerner::OAuth1a::AccessToken.new(
@@ -681,4 +691,3 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

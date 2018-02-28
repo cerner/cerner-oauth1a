@@ -4,7 +4,6 @@ require 'spec_helper'
 
 require 'cerner/oauth1a/protocol'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::Protocol do
   describe '.parse_url_query_string' do
     it 'raises ArgumentError with nil input' do
@@ -70,4 +69,3 @@ RSpec.describe Cerner::OAuth1a::Protocol do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

@@ -13,8 +13,8 @@ authentication via a variant of OAuth 1.0a.
 # Usage
 
 There are two use cases for working with this library: Consumer and Service Provider. The Consumer
-Use Case is for invoking services protected by Cener OAuth 1.0a. The Service Provider Use Case is
-for implementing a Ruby-based service
+Use Case is for invoking services protected by Cerner OAuth 1.0a. The Service Provider Use Case is
+for implementing a Ruby-based service.
 
 ## Consumer Use Case
 
@@ -60,7 +60,7 @@ implement that:
     authz_header = request['Authorization']
 
     # Parse the header value
-    access_token = AccessToken.parse_authorization_header(authz_header)
+    access_token = AccessToken.from_authorization_header(authz_header)
 
     # Authenticate the Access Token
     # Note: An AccessTokenAgent, configured with a System Account that has been granted privileges

@@ -9,11 +9,11 @@ class MockAccessTokenServer
       @response = response
     end
 
-    def do_GET(request, response) # rubocop:disable Style/MethodName
+    def do_GET(request, response) # rubocop:disable Naming/MethodName
       do_POST(request, response)
     end
 
-    def do_POST(_request, response) # rubocop:disable Style/MethodName
+    def do_POST(_request, response) # rubocop:disable Naming/MethodName
       response.status = @response[:status]
       response['Content-Type'] = @response[:content_type]
       response['WWW-Authenticate'] = @response[:www_authenticate] if @response[:www_authenticate]

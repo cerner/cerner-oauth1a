@@ -4,7 +4,6 @@ require 'spec_helper'
 
 require 'cerner/oauth1a/oauth_error'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Cerner::OAuth1a::OAuthError do
   describe '#initialize' do
     it 'constructs with only a message' do
@@ -36,4 +35,3 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength
