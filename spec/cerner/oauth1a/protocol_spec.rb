@@ -68,4 +68,48 @@ RSpec.describe Cerner::OAuth1a::Protocol do
       ).to eq(oauth_token: 'token#token')
     end
   end
+
+  describe '.convert_problem_to_http_status' do
+    context 'when problem is nil' do
+      it 'returns default' do
+        expect(
+          Cerner::OAuth1a::Protocol.convert_problem_to_http_status(nil)
+        ).to eq(:unauthorized)
+      end
+
+      it 'returns overriden default' do
+        expect(
+          Cerner::OAuth1a::Protocol.convert_problem_to_http_status(nil, :internal_server_error)
+        ).to eq(:internal_server_error)
+      end
+    end
+
+    context 'when problem is unknown' do
+      it 'returns default' do
+        expect(
+          Cerner::OAuth1a::Protocol.convert_problem_to_http_status('DEFINITELY NOT KNOWN')
+        ).to eq(:unauthorized)
+      end
+    end
+
+    context 'when problem is in BAD_REQUEST_PROBLEMS' do
+      Cerner::OAuth1a::Protocol::BAD_REQUEST_PROBLEMS.each do |problem|
+        it "returns :bad_request for #{problem}" do
+          expect(
+            Cerner::OAuth1a::Protocol.convert_problem_to_http_status(problem)
+          ).to eq(:bad_request)
+        end
+      end
+    end
+
+    context 'when problem is in UNAUTHORIZED_PROBLEMS' do
+      Cerner::OAuth1a::Protocol::UNAUTHORIZED_PROBLEMS.each do |problem|
+        it "returns :unauthorized for #{problem}" do
+          expect(
+            Cerner::OAuth1a::Protocol.convert_problem_to_http_status(problem)
+          ).to eq(:unauthorized)
+        end
+      end
+    end
+  end
 end

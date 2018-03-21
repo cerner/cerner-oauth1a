@@ -43,6 +43,41 @@ module Cerner
 
         params
       end
+
+      # Public: The oauth_problem values that are mapped to HTTP 400 Bad Request.
+      # The values come from http://wiki.oauth.net/w/page/12238543/ProblemReporting
+      # and are mapped based on https://oauth.net/core/1.0/#rfc.section.10.
+      BAD_REQUEST_PROBLEMS = %w[
+        additional_authorization_required parameter_absent parameter_rejected
+        signature_method_rejected timestamp_refused verifier_invalid
+        version_rejected
+      ].freeze
+
+      # Public: The oauth_problem values that are mapped to HTTP 401 Unauthorized.
+      # The values come from http://wiki.oauth.net/w/page/12238543/ProblemReporting
+      # and are mapped based on https://oauth.net/core/1.0/#rfc.section.10.
+      UNAUTHORIZED_PROBLEMS = %w[
+        consumer_key_refused consumer_key_rejected consumer_key_unknown
+        nonce_used permission_denied permission_unknown signature_invalid
+        token_expired token_rejected token_revoked token_used user_refused
+      ].freeze
+
+      # Public: Converts a oauth_problem value to an HTTP Status using the
+      # mappings in ::BAD_REQUEST_PROBLEMS and ::UNAUTHORIZED_PROBLEMS.
+      #
+      # problem - A String containing the oauth_problem value.
+      # default - An optional Symbol containing the value to return if an
+      #           unknown problem value is passed. Defaults to :unauthorized.
+      #
+      # Returns :unauthorized, :bad_request or the value passed in the default
+      # parameter.
+      def self.convert_problem_to_http_status(problem, default = :unauthorized)
+        return default unless problem
+        problem = problem.to_s
+        return :unauthorized if UNAUTHORIZED_PROBLEMS.include?(problem)
+        return :bad_request if BAD_REQUEST_PROBLEMS.include?(problem)
+        default
+      end
     end
   end
 end
