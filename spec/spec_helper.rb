@@ -14,7 +14,7 @@ RSpec.configure do |config|
 
   config.shared_context_metadata_behavior = :apply_to_host_groups
 
-  config.example_status_persistence_file_path = 'tmp/examples.txt'
+  config.example_status_persistence_file_path = 'build/examples.txt'
 
   config.disable_monkey_patching!
 
@@ -30,5 +30,6 @@ RSpec.configure do |config|
 end
 
 SimpleCov.start do
+  coverage_dir 'build/coverage'
   add_filter '/spec/'
 end

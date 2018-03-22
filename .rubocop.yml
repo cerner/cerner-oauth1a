@@ -19,6 +19,7 @@ Metrics/CyclomaticComplexity:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
     - lib/cerner/oauth1a/access_token_agent.rb
+    - lib/cerner/oauth1a/oauth_error.rb
 Metrics/LineLength:
   Max: 120
 Metrics/MethodLength:
@@ -31,3 +32,5 @@ Metrics/PerceivedComplexity:
 Style/GuardClause:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
+Style/WordArray:
+  MinSize: 5

@@ -19,13 +19,23 @@ module Cerner
         Hash[URI.decode_www_form(query).map { |pair| [pair[0].to_sym, pair[1]] }]
       end
 
-      # Public: Parses an OAuth HTTP Authorization scheme values, which can manifest
-      # in either HTTP Authorization or WWW-Authenticate headers.
+      # Public: Parses an OAuth HTTP Authorization scheme value, which can manifest
+      # in either an HTTP Authorization or WWW-Authenticate header.
       #
-      # https://oauth.net/core/1.0a/#auth_header
+      # Reference: https://oauth.net/core/1.0a/#auth_header
       #
       # value - String containing the value to parse. If nil or doesn't begin with
       #         'OAuth ', then an empty Hash will be returned.
+      #
+      # Examples
+      #
+      #   header = 'OAuth oauth_version="1.0", oauth_token="XYZ"'
+      #   Cerner::OAuth1a::Protocol.parse_authorization_header(header)
+      #   # => {:oauth_version=>"1.0", :oauth_token=>"XYZ"}
+      #
+      #   header = 'OAuth realm="https://test.host", oauth_problem="token_expired"'
+      #   Cerner::OAuth1a::Protocol.parse_www_authenticate_header(header)
+      #   # => {:realm=>"https://test.host", :oauth_problem=>"token_expired"}
       #
       # Returns a Hash with symbolized keys of all of the parameters.
       def self.parse_authorization_header(value)
@@ -33,7 +43,7 @@ module Cerner
         return params unless value
 
         value = value.strip
-        return params unless value.start_with?('OAuth ')
+        return params unless value.size > 6 && value[0..5].casecmp?('OAuth ')
 
         value.scan(/([^,\s=]*)=\"([^\"]*)\"/).each do |pair|
           k = URI.decode_www_form_component(pair[0])
@@ -42,6 +52,45 @@ module Cerner
         end
 
         params
+      end
+
+      # Public: Generates an OAuth HTTP Authorization scheme value, which can be
+      # in either an HTTP Authorization or WWW-Authenticate header.
+      #
+      # Reference: https://oauth.net/core/1.0a/#auth_header
+      #
+      # params - Hash containing the key-value pairs to build the value with.
+      #
+      # Examples
+      #
+      #   params = { oauth_version: '1.0', oauth_token: 'XYZ' }
+      #   Cerner::OAuth1a::Protocol.generate_authorization_header(params)
+      #   # => "OAuth oauth_version=\"1.0\",oauth_token=\"XYZ\""
+      #
+      #   params = { realm: 'https://test.host', oauth_problem: 'token_expired' }
+      #   Cerner::OAuth1a::Protocol.generate_www_authenticate_header(params)
+      #   # => "OAuth realm=\"https%3A%2F%2Ftest.host\",oauth_problem=\"token_expired\""
+      #
+      # Returns the String containing the generated value or nil if params is nil or empty.
+      def self.generate_authorization_header(params)
+        return nil unless params && !params.empty?
+
+        encoded_params = params.map do |k, v|
+          k = URI.encode_www_form_component(k).gsub('+', '%20')
+          v = URI.encode_www_form_component(v).gsub('+', '%20')
+          "#{k}=\"#{v}\""
+        end
+
+        'OAuth ' + encoded_params.join(',')
+      end
+
+      # Alias the parse and generate methods
+      class << self
+        # Public: Alias for Protocol.parse_authorization_header
+        alias parse_www_authenticate_header parse_authorization_header
+
+        # Public: Alias for Protocol.generate_www_authenticate_header
+        alias generate_www_authenticate_header generate_authorization_header
       end
 
       # Public: The oauth_problem values that are mapped to HTTP 400 Bad Request.
@@ -70,7 +119,7 @@ module Cerner
       #           unknown problem value is passed. Defaults to :unauthorized.
       #
       # Returns :unauthorized, :bad_request or the value passed in the default
-      # parameter.
+      #   parameter.
       def self.convert_problem_to_http_status(problem, default = :unauthorized)
         return default unless problem
         problem = problem.to_s

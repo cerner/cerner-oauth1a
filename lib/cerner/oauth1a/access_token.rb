@@ -149,8 +149,7 @@ module Cerner
           oauth_timestamp: @timestamp.tv_sec,
           oauth_token: @token
         }
-        @authorization_header =
-          'OAuth ' + tuples.map { |k, v| "#{k}=\"#{URI.encode_www_form_component(v)}\"" }.join(', ')
+        @authorization_header = Protocol.generate_authorization_header(tuples)
       end
 
       # Public: Authenticates the #token against the #consumer_key, #signature and side-channel

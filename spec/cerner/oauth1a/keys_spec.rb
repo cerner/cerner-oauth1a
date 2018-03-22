@@ -130,7 +130,7 @@ RSpec.describe Cerner::OAuth1a::Keys do
       keys = Cerner::OAuth1a::Keys.new(version: '1', aes_secret_key: '123456', rsa_public_key: pkey.to_pem)
       digest = OpenSSL::Digest::SHA1.new
       sig = pkey.sign(digest, 'message')
-      oauth_token = "message&RSASHA1=#{URI.encode_www_form_component(Base64.urlsafe_encode64(sig))}"
+      oauth_token = "message&RSASHA1=#{URI.encode_www_form_component(Base64.urlsafe_encode64(sig)).tr('+', '%20')}"
       expect(keys.verify_rsasha1_signature(oauth_token)).to be true
     end
 
@@ -139,7 +139,7 @@ RSpec.describe Cerner::OAuth1a::Keys do
       keys = Cerner::OAuth1a::Keys.new(version: '1', aes_secret_key: '123456', rsa_public_key: pkey.to_pem)
       digest = OpenSSL::Digest::SHA1.new
       sig = pkey.sign(digest, 'message')
-      oauth_token = "NOT+message&RSASHA1=#{URI.encode_www_form_component(Base64.urlsafe_encode64(sig))}"
+      oauth_token = "NOT+message&RSASHA1=#{URI.encode_www_form_component(Base64.urlsafe_encode64(sig)).tr('+', '%20')}"
       expect(keys.verify_rsasha1_signature(oauth_token)).to be false
     end
   end

@@ -115,7 +115,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'ConsumerKey=WRONG+CONSUMER+KEY'
+          token: 'ConsumerKey=WRONG%20CONSUMER%20KEY'
         )
         expect { at.authenticate(double('AccessTokenAgent')) }.to(
           raise_error(Cerner::OAuth1a::OAuthError, /consumer_key_rejected/)
@@ -127,7 +127,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'ConsumerKey=CONSUMER+KEY'
+          token: 'ConsumerKey=CONSUMER%20KEY'
         )
         expect { at.authenticate(double('AccessTokenAgent')) }.to(
           raise_error(Cerner::OAuth1a::OAuthError, /missing ExpiresOn/)
@@ -342,7 +342,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           token_secret: 'TOKEN SECRET'
         )
 
-        expect(access_token2.authorization_header).not_to be nil
+        expect(access_token2.authorization_header).not_to be_nil
         expect(access_token.object_id).not_to eq(access_token2.object_id)
         expect(access_token == access_token2).to be true
         expect(access_token.eql?(access_token2)).to be true
@@ -514,8 +514,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
     it 'contains oauth_ parts' do
       expect(access_token.authorization_header).to include('oauth_version="1.0"')
       expect(access_token.authorization_header).to include('oauth_signature_method="PLAINTEXT"')
-      expect(access_token.authorization_header).to include('oauth_signature="ACCESSOR+SECRET%26TOKEN+SECRET"')
-      expect(access_token.authorization_header).to include('oauth_consumer_key="CONSUMER+KEY"')
+      expect(access_token.authorization_header).to include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"')
+      expect(access_token.authorization_header).to include('oauth_consumer_key="CONSUMER%20KEY"')
       expect(access_token.authorization_header).to include('oauth_nonce="NONCE"')
       expect(access_token.authorization_header).to include('oauth_token="TOKEN"')
       expect(access_token.authorization_header).to match(/oauth_timestamp="\d+"/)
