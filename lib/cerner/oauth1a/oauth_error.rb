@@ -45,11 +45,15 @@ module Cerner
         super(parts.empty? ? nil : parts.join(' '))
       end
 
+      # Public: Generates an HTTP WWW-Authenticate header value based from the
+      # data in this OAuthError.
+      #
+      # Returns the generated value or nil if there is no #oauth_problem and #oauth_parameters.
       def to_http_www_authenticate_header
         params = {}
         params[:oauth_problem] = @oauth_problem if @oauth_problem
 
-        if @oauth_parameters
+        if @oauth_problem && @oauth_parameters
           case @oauth_problem
           when 'parameter_absent'
             params[:oauth_parameters_absent] = format_parameters(@oauth_parameters)
@@ -61,12 +65,25 @@ module Cerner
         Protocol.generate_www_authenticate_header(params)
       end
 
+      # Public: Provides an HTTP Status Symbol based on the #oauth_problem using
+      # Protocol.convert_problem_to_http_status.
+      #
+      # default - The Symbol to return if #oauth_problem contains an unknown value.
+      #           Defaults to :unauthorized.
+      #
+      # Returns :unauthorized, :bad_request or the value passed in default parameter.
       def to_http_status(default = :unauthorized)
         Protocol.convert_problem_to_http_status(@oauth_problem, default)
       end
 
       private
 
+      # Internal: Formats a list of parameter names according to the OAuth
+      # Problem extension.
+      #
+      # params - An Array of Strings.
+      #
+      # Returns a formatted String.
       def format_parameters(params)
         params.map { |p| URI.encode_www_form_component(p).gsub('+', '%20') }.join('&')
       end

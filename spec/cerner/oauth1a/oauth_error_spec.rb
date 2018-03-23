@@ -69,6 +69,13 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
       end
     end
 
+    context 'returns nil' do
+      it 'when oauth_problem is not present' do
+        oe = Cerner::OAuth1a::OAuthError.new('message')
+        expect(oe.to_http_www_authenticate_header).to be_nil
+      end
+    end
+
     context 'returns String' do
       it 'when oauth_problem is present' do
         oe = Cerner::OAuth1a::OAuthError.new('message', nil, 'token_rejected')
