@@ -1,10 +1,10 @@
 language: ruby
 rvm:
-  - ruby-2.3
   - ruby-2.4
   - ruby-2.5
   - ruby-head
-script: bundle exec rspec
+before_install: gem install bundler
+script: bin/rspec
 matrix:
   allow_failures:
     - rvm: ruby-head
