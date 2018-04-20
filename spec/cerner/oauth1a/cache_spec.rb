@@ -49,13 +49,13 @@ RSpec.describe Cerner::OAuth1a::Cache do
     it 'retrieves a stored entry' do
       se1 = SimpleEntry.new(value: 'val1')
       cache.put('key1', se1)
-      expect(cache.get('key1')).to be (se1)
+      expect(cache.get('key1')).to be(se1)
     end
 
     it 'does not retrieve an expired entry' do
       se1 = SimpleEntry.new(value: 'val1')
       cache.put('key1', se1)
-      expect(cache.get('key1')).to be (se1)
+      expect(cache.get('key1')).to be(se1)
       se1.expired = true
       expect(cache.get('key1')).to be_nil
     end

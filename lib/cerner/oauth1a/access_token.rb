@@ -22,21 +22,21 @@ module Cerner
       def self.from_authorization_header(value)
         params = Protocol.parse_authorization_header(value)
 
-        raise OAuthError.new('', nil, 'version_rejected') if params[:oauth_version] && params[:oauth_version] != '1.0'
+        raise OAuthError.new('', nil, 'version_rejected') unless params[:oauth_version]&.eql?('1.0')
 
         missing_params = []
         consumer_key = params[:oauth_consumer_key]
-        missing_params << :oauth_consumer_key unless consumer_key && !consumer_key.empty?
+        missing_params << :oauth_consumer_key unless consumer_key&.empty?
         nonce = params[:oauth_nonce]
-        missing_params << :oauth_nonce unless nonce && !nonce.empty?
+        missing_params << :oauth_nonce unless nonce&.empty?
         timestamp = params[:oauth_timestamp]
-        missing_params << :oauth_timestamp unless timestamp && !timestamp.empty?
+        missing_params << :oauth_timestamp unless timestamp&.empty?
         token = params[:oauth_token]
-        missing_params << :oauth_token unless token && !token.empty?
+        missing_params << :oauth_token unless token&.empty?
         signature_method = params[:oauth_signature_method]
-        missing_params << :oauth_signature_method unless signature_method && !signature_method.empty?
+        missing_params << :oauth_signature_method unless signature_method&.empty?
         signature = params[:oauth_signature]
-        missing_params << :oauth_signature unless signature && !signature.empty?
+        missing_params << :oauth_signature unless signature&.empty?
 
         raise OAuthError.new('', nil, 'parameter_absent', missing_params) unless missing_params.empty?
 
@@ -105,7 +105,7 @@ module Cerner
         raise ArgumentError, 'timestamp is nil' unless timestamp
         raise ArgumentError, 'token is nil' unless token
 
-        @accessor_secret = accessor_secret ? accessor_secret : nil
+        @accessor_secret = accessor_secret || nil
         @authorization_header = nil
         @consumer_key = consumer_key
         @expires_at = expires_at ? convert_to_time(expires_at) : nil
@@ -114,7 +114,7 @@ module Cerner
         @signature_method = signature_method || 'PLAINTEXT'
         @timestamp = convert_to_time(timestamp)
         @token = token
-        @token_secret = token_secret ? token_secret : nil
+        @token_secret = token_secret || nil
       end
 
       # Public: Generates a value suitable for use as an HTTP Authorization header. If #signature is

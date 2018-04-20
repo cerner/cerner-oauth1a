@@ -8,7 +8,7 @@ class SimpleEntry
     @expired = expired
   end
 
-  def expired?(now)
+  def expired?(_now)
     expired
   end
 end
