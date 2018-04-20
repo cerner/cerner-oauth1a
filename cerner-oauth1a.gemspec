@@ -1,4 +1,6 @@
-$LOAD_PATH.push File.expand_path('../lib', __FILE__)
+# frozen_string_literal: true
+
+$LOAD_PATH.push File.expand_path('lib', __dir__)
 
 require 'cerner/oauth1a/version'
 
@@ -7,9 +9,11 @@ Gem::Specification.new do |s|
   s.version = Cerner::OAuth1a::VERSION
   s.homepage = 'http://github.com/cerner/cerner-oauth1a'
   s.summary = 'Cerner OAuth 1.0a Consumer and Service Provider Library.'
-  s.description = 'A minimal dependency library for interacting with a Cerner OAuth 1.0a Access ' \
-                  'Token Service for invoking Cerner OAuth 1.0a protected services or ' \
-                  'implementing Cerner OAuth 1.0a authentication.'
+  s.description = <<~DESC
+                    A minimal dependency library for interacting with a Cerner OAuth 1.0a Access
+                    Token Service for invoking Cerner OAuth 1.0a protected services or
+                    implementing Cerner OAuth 1.0a authentication.
+                  DESC
   s.licenses = ['Apache-2.0']
   s.authors = ['Nathan Beyer']
   s.email = ['nbeyer@gmail.com']

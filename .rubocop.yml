@@ -1,9 +1,7 @@
 AllCops:
   TargetRubyVersion: 2.4
   Exclude:
-    - cerner-oauth1a.gemspec
-    - Gemfile
-    - Rakefile
+    - bin/*
 Layout/EmptyLinesAroundModuleBody:
   Enabled: false
 Metrics/AbcSize:
