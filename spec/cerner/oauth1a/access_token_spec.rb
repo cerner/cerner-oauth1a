@@ -158,6 +158,18 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
       end
 
+      it 'when retrieve_keys fails' do
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: 'CONSUMER KEY',
+          nonce: 'NONCE',
+          timestamp: Time.now,
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2"
+        )
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:retrieve_keys).with('2').and_raise(Cerner::OAuth1a::OAuthError, 'invalid keys')
+        expect { at.authenticate(ata) }.to raise_error(Cerner::OAuth1a::OAuthError, /token references invalid keys version/)
+      end
+
       it 'when token is not authentic' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',

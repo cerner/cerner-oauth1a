@@ -280,15 +280,19 @@ module Cerner
       #
       # Raises OAuthError if the parameter is invalid or expired
       def verify_expiration(expires_on)
-        raise OAuthError.new('token missing ExpiresOn', nil, 'oauth_parameters_rejected') unless expires_on
+        raise OAuthError.new('token missing ExpiresOn', nil, 'oauth_parameters_rejected', 'oauth_token') unless expires_on
         expires_on = convert_to_time(expires_on)
         now = convert_to_time(Time.now)
         raise OAuthError.new('token has expired', nil, 'token_expired') if now.tv_sec >= expires_on.tv_sec
       end
 
       def load_keys(access_token_agent, keys_version)
-        raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected') unless keys_version
-        access_token_agent.retrieve_keys(keys_version)
+        raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token') unless keys_version
+        begin
+          access_token_agent.retrieve_keys(keys_version)
+        rescue OAuthError
+          raise OAuthError.new('token references invalid keys version', nil, 'oauth_parameters_rejected', 'oauth_token')
+        end
       end
 
       # Internal: Used by #authenticate to verify the oauth_token value.
@@ -298,7 +302,7 @@ module Cerner
       # Raises OAuthError if the parameter is not authentic
       def verify_token(keys)
         unless keys.verify_rsasha1_signature(@token)
-          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected')
+          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token')
         end
       end
 
@@ -310,13 +314,13 @@ module Cerner
       # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
       # not match the secrets
       def verify_signature(keys, hmac_secrets)
-        raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent') unless @signature
-        raise OAuthError.new('missing HMACSecrets', nil, 'oauth_parameters_rejected') unless hmac_secrets
+        raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature') unless @signature
+        raise OAuthError.new('missing HMACSecrets', nil, 'oauth_parameters_rejected', 'oauth_token') unless hmac_secrets
 
         begin
           secrets = keys.decrypt_hmac_secrets(hmac_secrets)
         rescue ArgumentError, OpenSSL::PKey::RSAError => e
-          raise OAuthError.new("unable to decrypt HMACSecrets: #{e.message}", nil, 'oauth_parameters_rejected')
+          raise OAuthError.new("unable to decrypt HMACSecrets: #{e.message}", nil, 'oauth_parameters_rejected', 'oauth_token')
         end
 
         secrets_parts = Protocol.parse_url_query_string(secrets)
