@@ -76,7 +76,7 @@ implement that:
 
     # Optionally, extract additional parameters sent with the token, such as Consumer.Principal
     # (xoauth_principal)
-    consumer_principal = results[:"Consumer.Principal"]
+    consumer_principal = access_token.consumer_principal
 
 ## References
 * https://wiki.ucern.com/display/public/reference/Cerner%27s+OAuth+Specification

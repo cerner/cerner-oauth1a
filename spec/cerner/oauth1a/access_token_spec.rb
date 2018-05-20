@@ -252,6 +252,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           timestamp: Time.now,
           token: 'Consumer.Principal=CONSUMER+PRINCIPAL&' \
             'ConsumerKey=CONSUMER+KEY&' \
+            'Extra=SOMETHING&' \
             "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
             'KeysVersion=1&HMACSecrets=SECRETS',
           signature: 'CONSUMER SECRET&TOKEN SECRET'
@@ -265,7 +266,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
-        expect(at.authenticate(ata)).to eq('Consumer.Principal': 'CONSUMER PRINCIPAL')
+        expect(at.consumer_principal).to be(nil)
+        expect(at.authenticate(ata)).to eq('Extra': 'SOMETHING')
+        expect(at.consumer_principal).to eq('CONSUMER PRINCIPAL')
       end
     end
   end

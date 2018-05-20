@@ -14,7 +14,7 @@ require 'uri'
 
 module Cerner
   module OAuth1a
-    # Public: A user agent for interacting with the Cerner OAuth 1.0a Access Token service to acquire
+    # Public: A user agent (client) for interacting with the Cerner OAuth 1.0a Access Token service to acquire
     # consumer Access Tokens or service provider Keys.
     class AccessTokenAgent
       MIME_WWW_FORM_URL_ENCODED = 'application/x-www-form-urlencoded'
@@ -28,7 +28,9 @@ module Cerner
 
       # Public: Constructs an instance of the agent.
       #
-      # Caching - By default, AccessToken and Keys instances are maintained in a small, constrained
+      # _Caching_
+      #
+      # By default, AccessToken and Keys instances are maintained in a small, constrained
       # memory cache used by #retrieve and #retrieve_keys, respectively.
       #
       # The AccessToken cache keeps a maximum of 5 entries and prunes them when they expire. As the

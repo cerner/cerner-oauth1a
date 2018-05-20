@@ -50,24 +50,28 @@ module Cerner
         )
       end
 
-      # Returns the String Accessor Secret related to this token.
+      # Returns a String, but may be nil, with the Accessor Secret related to this token.
       attr_reader :accessor_secret
-      # Returns the String Consumer Key (oauth_consumer_key) related to this token.
+      # Returns a String with the Consumer Key (oauth_consumer_key) related to this token.
       attr_reader :consumer_key
-      # Returns the Time this token expires at.
+      # Returns a Time, but may be nil, which represents the moment when this token expires.
       attr_reader :expires_at
-      # Returns the String nonce (oauth_nonce) related to this token.
+      # Returns a String with the Nonce (oauth_nonce) related to this token.
       attr_reader :nonce
-      # Returns the Time this token was created (oauth_timestamp).
+      # Returns a Time, which represents the moment when this token was created (oauth_timestamp).
       attr_reader :timestamp
-      # Returns the String Token (oauth_token).
+      # Returns a String with the Token (oauth_token).
       attr_reader :token
-      # Returns the String Token Secret related to this token.
+      # Returns a String, but may be nil, with the Token Secret related to this token.
       attr_reader :token_secret
-      # Returns the String Signature Method (oauth_signature_method) related to this token.
+      # Returns a String with the Signature Method (oauth_signature_method) related to this token.
       attr_reader :signature_method
-      # Returns the String Signature (oauth_signature) related to this token.
+      # Returns a String, but may be nil, with the Signature (oauth_signature) related to this token.
       attr_reader :signature
+      # Returns a String with the Consumer Principal (Consumer.Principal param encoded within oauth_token).
+      # This value is only populated after a successful #authenticate and only if the #token (oauth_token)
+      # contains a 'Consumer.Principal' parameter.
+      attr_reader :consumer_principal
 
       # Public: Constructs an instance.
       #
@@ -108,6 +112,7 @@ module Cerner
         @accessor_secret = accessor_secret || nil
         @authorization_header = nil
         @consumer_key = consumer_key
+        @consumer_principal = nil
         @expires_at = expires_at ? convert_to_time(expires_at) : nil
         @nonce = nonce
         @signature = signature
@@ -159,7 +164,8 @@ module Cerner
       #                      appropriate credentials to retrieve secrets via
       #                      Cerner::OAuth1a::AccessTokenAgent#retrieve_keys.
       #
-      # Returns a Hash (symbolized keys) of any extra parameters in #token if authentication succeeds.
+      # Returns a Hash (symbolized keys) of any extra parameters within #token (oauth_token),
+      # if authentication succeeds. In most scenarios, the Hash will be empty.
       #
       # Raises ArgumentError if access_token_agent is nil
       # Raises Cerner::OAuth1a::OAuthError with an oauth_problem if authentication fails.
@@ -185,6 +191,8 @@ module Cerner
         tuples.delete(:RSASHA1)
 
         verify_signature(keys, tuples.delete(:HMACSecrets))
+
+        @consumer_principal = tuples.delete(:"Consumer.Principal")
 
         tuples
       end
