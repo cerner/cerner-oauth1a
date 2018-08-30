@@ -1,6 +1,6 @@
 # How to Release
 
-This project is hosted on RubyGems.  You can see it [here][https://rubygems.org/gems/cerner-oauth1a/].
+This project is hosted on RubyGems.  You can see it [here](https://rubygems.org/gems/cerner-oauth1a/).
 
 Releasing the project requires these steps:
 
