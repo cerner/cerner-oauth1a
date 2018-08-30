@@ -255,7 +255,7 @@ module Cerner
 
       # Internal: Prepare a request for #retrieve_keys
       def retrieve_keys_prepare_request(keys_version)
-        request = Net::HTTP::Get.new("#{@access_token_url}/keys/#{keys_version}")
+        request = Net::HTTP::Get.new(URI("#{@access_token_url}/keys/#{keys_version}"))
         request['Accept'] = 'application/json'
         request['User-Agent'] = user_agent_string
         request['Authorization'] = retrieve.authorization_header

@@ -26,17 +26,17 @@ module Cerner
 
         missing_params = []
         consumer_key = params[:oauth_consumer_key]
-        missing_params << :oauth_consumer_key unless consumer_key&.empty?
+        missing_params << :oauth_consumer_key if consumer_key.nil? || consumer_key.empty?
         nonce = params[:oauth_nonce]
-        missing_params << :oauth_nonce unless nonce&.empty?
+        missing_params << :oauth_nonce if nonce.nil? || nonce.empty?
         timestamp = params[:oauth_timestamp]
-        missing_params << :oauth_timestamp unless timestamp&.empty?
+        missing_params << :oauth_timestamp if timestamp.nil? || timestamp.empty?
         token = params[:oauth_token]
-        missing_params << :oauth_token unless token&.empty?
+        missing_params << :oauth_token if token.nil? || token.empty?
         signature_method = params[:oauth_signature_method]
-        missing_params << :oauth_signature_method unless signature_method&.empty?
+        missing_params << :oauth_signature_method if signature_method.nil? || signature_method.empty?
         signature = params[:oauth_signature]
-        missing_params << :oauth_signature unless signature&.empty?
+        missing_params << :oauth_signature if signature.nil? || signature.empty?
 
         raise OAuthError.new('', nil, 'parameter_absent', missing_params) unless missing_params.empty?
 
