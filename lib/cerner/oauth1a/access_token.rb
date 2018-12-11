@@ -211,6 +211,7 @@ module Cerner
       def expired?(now: Time.now, fudge_sec: 300)
         # if @expires_at is nil, return true now
         return true unless @expires_at
+
         now = convert_to_time(now)
         now.tv_sec >= @expires_at.tv_sec - fudge_sec
       end
@@ -254,7 +255,8 @@ module Cerner
           token: @token,
           token_secret: @token_secret,
           signature_method: @signature_method,
-          signature: @signature
+          signature: @signature,
+          consumer_principal: @consumer_principal
         }
       end
 
@@ -267,6 +269,7 @@ module Cerner
       # Returns a Time instance in the UTC time zone.
       def convert_to_time(time)
         raise ArgumentError, 'time is nil' unless time
+
         if time.is_a? Time
           time.utc
         else
@@ -280,14 +283,36 @@ module Cerner
       #
       # Raises OAuthError if the parameter is invalid or expired
       def verify_expiration(expires_on)
-        raise OAuthError.new('token missing ExpiresOn', nil, 'oauth_parameters_rejected', 'oauth_token') unless expires_on
+        unless expires_on
+          raise OAuthError.new(
+            'token missing ExpiresOn',
+            nil,
+            'oauth_parameters_rejected',
+            'oauth_token'
+          )
+        end
+
         expires_on = convert_to_time(expires_on)
         now = convert_to_time(Time.now)
-        raise OAuthError.new('token has expired', nil, 'token_expired') if now.tv_sec >= expires_on.tv_sec
+        if now.tv_sec >= expires_on.tv_sec
+          raise OAuthError.new(
+            'token has expired',
+            nil,
+            'token_expired'
+          )
+        end
       end
 
       def load_keys(access_token_agent, keys_version)
-        raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token') unless keys_version
+        unless keys_version
+          raise OAuthError.new(
+            'token missing KeysVersion',
+            nil,
+            'oauth_parameters_rejected',
+            'oauth_token'
+          )
+        end
+
         begin
           access_token_agent.retrieve_keys(keys_version)
         rescue OAuthError
@@ -320,7 +345,12 @@ module Cerner
         begin
           secrets = keys.decrypt_hmac_secrets(hmac_secrets)
         rescue ArgumentError, OpenSSL::PKey::RSAError => e
-          raise OAuthError.new("unable to decrypt HMACSecrets: #{e.message}", nil, 'oauth_parameters_rejected', 'oauth_token')
+          raise OAuthError.new(
+            "unable to decrypt HMACSecrets: #{e.message}",
+            nil,
+            'oauth_parameters_rejected',
+            'oauth_token'
+          )
         end
 
         secrets_parts = Protocol.parse_url_query_string(secrets)

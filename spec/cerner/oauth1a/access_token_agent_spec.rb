@@ -126,7 +126,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(
         access_token_url: "#{@server.base_uri}/oauth/access_token_rejected",
         consumer_key: 'CONSUMER KEY',
-        consumer_secret: 'CONSUMER SECRET'
+        consumer_secret: 'CONSUMER SECRET',
+        cache_access_tokens: false
       )
       expect { agent.retrieve }.to raise_error(Cerner::OAuth1a::OAuthError, /token_rejected/)
     end

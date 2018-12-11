@@ -76,8 +76,8 @@ module Cerner
         @open_timeout = (open_timeout ? open_timeout.to_i : 5)
         @read_timeout = (read_timeout ? read_timeout.to_i : 5)
 
-        @keys_cache = cache_keys ? Cache.new(max: 10) : nil
-        @access_token_cache = cache_access_tokens ? Cache.new(max: 5) : nil
+        @keys_cache = cache_keys ? Cache.instance : nil
+        @access_token_cache = cache_access_tokens ? Cache.instance : nil
       end
 
       # Public: Retrieves the service provider keys from the configured Access Token service endpoint
@@ -96,14 +96,14 @@ module Cerner
         raise ArgumentError, 'keys_version is nil' unless keys_version
 
         if @keys_cache
-          cache_entry = @keys_cache.get(keys_version)
+          cache_entry = @keys_cache.get('cerner-oauth/keys', keys_version)
           return cache_entry.value if cache_entry
         end
 
         request = retrieve_keys_prepare_request(keys_version)
         response = http_client.request(request)
         keys = retrieve_keys_handle_response(keys_version, response)
-        @keys_cache&.put(keys_version, Cache::KeysEntry.new(keys, Cache::TWENTY_FOUR_HOURS))
+        @keys_cache&.put('cerner-oauth/keys', keys_version, Cache::KeysEntry.new(keys, Cache::TWENTY_FOUR_HOURS))
         keys
       end
 
@@ -120,7 +120,7 @@ module Cerner
       def retrieve(principal = nil)
         cache_key = "#{@consumer_key}&#{principal}"
         if @access_token_cache
-          cache_entry = @access_token_cache.get(cache_key)
+          cache_entry = @access_token_cache.get('cerner-oauth/access-tokens', cache_key)
           return cache_entry.value if cache_entry
         end
 
@@ -132,7 +132,7 @@ module Cerner
         request = retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
         response = http_client.request(request)
         access_token = retrieve_handle_response(response, timestamp, nonce, accessor_secret)
-        @access_token_cache&.put(cache_key, Cache::AccessTokenEntry.new(access_token))
+        @access_token_cache&.put('cerner-oauth/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
         access_token
       end
 
@@ -191,6 +191,7 @@ module Cerner
       # Raises ArgumentError if access_token_url is nil, invalid or not an HTTP/HTTPS URI
       def convert_to_http_uri(access_token_url)
         raise ArgumentError, 'access_token_url is nil' unless access_token_url
+
         if access_token_url.is_a? URI
           uri = access_token_url
         else
@@ -201,7 +202,9 @@ module Cerner
             raise ArgumentError, 'access_token_url is invalid'
           end
         end
+
         raise ArgumentError, 'access_token_url must be an HTTP or HTTPS URI' unless uri.is_a?(URI::HTTP)
+
         uri
       end
 
@@ -269,8 +272,10 @@ module Cerner
           parsed_response = JSON.parse(response.body)
           aes_key = parsed_response.dig('aesKey', 'secretKey')
           raise OAuthError, 'AES secret key retrieved was invalid' unless aes_key
+
           rsa_key = parsed_response.dig('rsaKey', 'publicKey')
           raise OAuthError, 'RSA public key retrieved was invalid' unless rsa_key
+
           Keys.new(
             version: keys_version,
             aes_secret_key: Base64.decode64(aes_key),

@@ -77,6 +77,17 @@ implement that:
     # (xoauth_principal)
     consumer_principal = access_token.consumer_principal
 
+## Caching
+
+The AccessTokenAgent class provides built-in memory caching. AccessTokens and Keys are cached
+behind their respective retrieve methods. The caching can be disabled via parameters passed to the
+constructor. See the class-level documentation for details.
+
+### Caching in Rails
+
+When the gem is loaded within a Rails application, it will attach a Railtie for initializing the
+cache to use an implementation that stores the AccessTokens and Keys within Rails.cache.
+
 ## References
 * https://wiki.ucern.com/display/public/reference/Cerner%27s+OAuth+Specification
   * http://oauth.net/core/1.0a

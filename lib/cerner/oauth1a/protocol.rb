@@ -122,9 +122,13 @@ module Cerner
       #   parameter.
       def self.convert_problem_to_http_status(problem, default = :unauthorized)
         return default unless problem
+
         problem = problem.to_s
+
         return :unauthorized if UNAUTHORIZED_PROBLEMS.include?(problem)
+
         return :bad_request if BAD_REQUEST_PROBLEMS.include?(problem)
+
         default
       end
     end

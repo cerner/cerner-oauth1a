@@ -28,4 +28,13 @@ RSpec.describe Cerner::OAuth1a::Cache::AccessTokenEntry do
       expect(ate.expired?(now + 10)).to be true
     end
   end
+
+  describe '#expires_in' do
+    it 'returns seconds to expiration' do
+      at = double('AccessToken')
+      ate = Cerner::OAuth1a::Cache::AccessTokenEntry.new(at)
+      expect(at).to receive(:expires_at).and_return(Time.at(Time.now.utc.to_i + 10))
+      expect(ate.expires_in).to be <= 10
+    end
+  end
 end
