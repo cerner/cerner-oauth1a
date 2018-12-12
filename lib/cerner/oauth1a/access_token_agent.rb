@@ -86,16 +86,19 @@ module Cerner
       #
       # keys_version - The version identifier of the keys to retrieve. This corresponds to the
       #                KeysVersion parameter of the oauth_token.
+      # keywords     - The additional, optional keyword arguments for this method
+      #               :ignore_cache - A flag for indicating that the cache should be ignored and a
+      #                               new Access Token should be retrieved.
       #
       # Return a Keys instance upon success.
       #
       # Raises ArgumentError if keys_version is nil.
       # Raises OAuthError for any functional errors returned within an HTTP 200 response.
       # Raises StandardError sub-classes for any issues interacting with the service, such as networking issues.
-      def retrieve_keys(keys_version)
+      def retrieve_keys(keys_version, ignore_cache: false)
         raise ArgumentError, 'keys_version is nil' unless keys_version
 
-        if @keys_cache
+        if @keys_cache && !ignore_cache
           cache_entry = @keys_cache.get('cerner-oauth/keys', keys_version)
           return cache_entry.value if cache_entry
         end
@@ -111,15 +114,19 @@ module Cerner
       # This method will use the #generate_accessor_secret, #generate_nonce and #generate_timestamp methods to
       # interact with the service, which can be overridden via a sub-class, if desired.
       #
-      # principal - An optional principal identifier, which is passed via the xoauth_principal protocol parameter.
+      # keywords - The additional, optional keyword arguments for this method
+      #            :principal    - An optional principal identifier, which is passed via the
+      #                            xoauth_principal protocol parameter.
+      #            :ignore_cache - A flag for indicating that the cache should be ignored and a new
+      #                            Access Token should be retrieved.
       #
       # Returns a AccessToken upon success.
       #
       # Raises OAuthError for any functional errors returned within an HTTP 200 response.
       # Raises StandardError sub-classes for any issues interacting with the service, such as networking issues.
-      def retrieve(principal = nil)
+      def retrieve(principal: nil, ignore_cache: false)
         cache_key = "#{@consumer_key}&#{principal}"
-        if @access_token_cache
+        if @access_token_cache && !ignore_cache
           cache_entry = @access_token_cache.get('cerner-oauth/access-tokens', cache_key)
           return cache_entry.value if cache_entry
         end

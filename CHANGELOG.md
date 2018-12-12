@@ -1,8 +1,10 @@
 # v2.0.0
 Added APIs for authenticating Access Tokens, so that service providers can be implemented
-with this library.
+with this library. Additionally, caching mechanisms for AccessTokens and Keys has been
+added.
 
 Behavior changes:
+* Caching of AccessTokens is on by default within Cerner::OAuth1a::AccessTokenAgent
 * accessor_secret is no longer required to construct a Cerner::OAuth1a::AccessToken
 * token_secret is no longer required to construct a Cerner::OAuth1a::AccessToken
 * expires_at is no longer required to construct a Cerner::OAuth1a::AccessToken
