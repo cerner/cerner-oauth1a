@@ -69,11 +69,14 @@ module Cerner
       #
       #   params = { realm: 'https://test.host', oauth_problem: 'token_expired' }
       #   Cerner::OAuth1a::Protocol.generate_www_authenticate_header(params)
-      #   # => "OAuth realm=\"https%3A%2F%2Ftest.host\",oauth_problem=\"token_expired\""
+      #   # => "OAuth realm=\"https://test.host\",oauth_problem=\"token_expired\""
       #
       # Returns the String containing the generated value or nil if params is nil or empty.
       def self.generate_authorization_header(params)
         return nil unless params && !params.empty?
+
+        realm = "realm=\"#{params.delete(:realm)}\"" if params[:realm]
+        realm += ', ' if realm && !params.empty?
 
         encoded_params = params.map do |k, v|
           k = URI.encode_www_form_component(k).gsub('+', '%20')
@@ -81,7 +84,7 @@ module Cerner
           "#{k}=\"#{v}\""
         end
 
-        'OAuth ' + encoded_params.join(',')
+        "OAuth #{realm}#{encoded_params.join(',')}"
       end
 
       # Alias the parse and generate methods

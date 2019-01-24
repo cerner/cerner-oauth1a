@@ -10,7 +10,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
       it 'when oauth_version is not 1.0' do
         expect do
           Cerner::OAuth1a::AccessToken.from_authorization_header(
-            'OAuth oauth_version="1.1", ' \
+            'OAuth realm="realm", ' \
+            'oauth_version="1.1", ' \
             'oauth_consumer_key="consumer key", ' \
             'oauth_nonce="nonce", ' \
             'oauth_timestamp="1", ' \
@@ -26,7 +27,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
       it 'when oauth_consumer_key is missing' do
         expect do
           Cerner::OAuth1a::AccessToken.from_authorization_header(
-            'OAuth oauth_version="1.0", ' \
+            'OAuth realm="realm", ' \
+            'oauth_version="1.0", ' \
             'oauth_nonce="nonce", ' \
             'oauth_timestamp="1", ' \
             'oauth_token="token", ' \
@@ -117,11 +119,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: 'TOKEN',
-          signature_method: 'REJECT_THIS'
+          signature_method: 'REJECT_THIS',
+          realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /signature_method_rejected/)
-        )
+        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'signature_method_rejected'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when consumer keys do not match' do
@@ -129,11 +134,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'ConsumerKey=WRONG%20CONSUMER%20KEY'
+          token: 'ConsumerKey=WRONG%20CONSUMER%20KEY',
+          realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /consumer_key_rejected/)
-        )
+        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'consumer_key_rejected'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when ExpiresOn is missing' do
@@ -141,11 +149,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'ConsumerKey=CONSUMER%20KEY'
+          token: 'ConsumerKey=CONSUMER%20KEY',
+          realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /missing ExpiresOn/)
-        )
+        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'missing ExpiresOn'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when ExpiresOn has expired' do
@@ -153,11 +164,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i - 60}"
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
+          realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /token_expired/)
-        )
+        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'token_expired'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when KeysVersion is missing' do
@@ -165,11 +179,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}"
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
+          realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /missing KeysVersion/)
-        )
+        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'missing KeysVersion'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when retrieve_keys fails' do
@@ -177,15 +194,18 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2"
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2",
+          realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(
           receive(:retrieve_keys).with('2').and_raise(Cerner::OAuth1a::OAuthError, 'invalid keys')
         )
-        expect { at.authenticate(ata) }.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /token references invalid keys version/)
-        )
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'token references invalid keys version'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when token is not authentic' do
@@ -193,13 +213,18 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1"
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          realm: 'REALM'
         )
         keys = double('Keys')
         expect(keys).to receive(:verify_rsasha1_signature).and_return(false)
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
-        expect { at.authenticate(ata) }.to raise_error(Cerner::OAuth1a::OAuthError, /not authentic/)
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'not authentic'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when signature is missing' do
@@ -208,13 +233,18 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
-          signature: 'SIGNATURE'
+          signature: 'SIGNATURE',
+          realm: 'REALM'
         )
         keys = double('Keys')
         expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
-        expect { at.authenticate(ata) }.to raise_error(Cerner::OAuth1a::OAuthError, /missing HMACSecrets/)
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'missing HMACSecrets'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when HMACSecrets fail to decrypt' do
@@ -223,14 +253,19 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'SIGNATURE'
+          signature: 'SIGNATURE',
+          realm: 'REALM'
         )
         keys = double('Keys')
         expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
         expect(keys).to receive(:decrypt_hmac_secrets).with('SECRETS').and_raise(ArgumentError, 'SIMULATED_FAILURE')
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
-        expect { at.authenticate(ata) }.to raise_error(Cerner::OAuth1a::OAuthError, /SIMULATED_FAILURE/)
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'SIMULATED_FAILURE'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when signature does not match secrets' do
@@ -239,7 +274,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'SIGNATURE'
+          signature: 'SIGNATURE',
+          realm: 'REALM'
         )
         keys = double('Keys')
         expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
@@ -250,7 +286,11 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
-        expect { at.authenticate(ata) }.to raise_error(Cerner::OAuth1a::OAuthError, /signature_invalid/)
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'signature_invalid'
+          expect(error.realm).to eq('REALM')
+        end
       end
     end
 
@@ -312,7 +352,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         nonce: 'NONCE',
         timestamp: Time.at(Time.now.to_i),
         token: 'TOKEN',
-        token_secret: 'TOKEN SECRET'
+        token_secret: 'TOKEN SECRET',
+        realm: 'REALM'
       )
       hash = access_token.to_h
       expect(hash[:accessor_secret]).to eq(access_token.accessor_secret)
@@ -322,6 +363,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
       expect(hash[:timestamp]).to eq(access_token.timestamp)
       expect(hash[:token]).to eq(access_token.token)
       expect(hash[:token_secret]).to eq(access_token.token_secret)
+      expect(hash[:realm]).to eq(access_token.realm)
     end
   end
 
@@ -336,7 +378,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         nonce: 'NONCE',
         timestamp: current_time,
         token: 'TOKEN',
-        token_secret: 'TOKEN SECRET'
+        token_secret: 'TOKEN SECRET',
+        realm: 'REALM'
       )
     end
 
@@ -356,7 +399,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: current_time,
           token: 'TOKEN',
-          token_secret: 'TOKEN SECRET'
+          token_secret: 'TOKEN SECRET',
+          realm: 'REALM'
         )
 
         expect(access_token.object_id).not_to eq(access_token2.object_id)
@@ -372,7 +416,8 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: current_time,
           token: 'TOKEN',
-          token_secret: 'TOKEN SECRET'
+          token_secret: 'TOKEN SECRET',
+          realm: 'REALM'
         )
 
         expect(access_token2.authorization_header).not_to be_nil
@@ -480,6 +525,21 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(access_token == access_token2).to be false
         expect(access_token.eql?(access_token2)).to be false
       end
+
+      it 'when realm varies' do
+        access_token2 = Cerner::OAuth1a::AccessToken.new(
+          accessor_secret: 'ACCESSOR SECRET',
+          consumer_key: 'CONSUMER KEY',
+          expires_at: expires_at,
+          nonce: 'NONCE',
+          timestamp: current_time,
+          token: 'TOKEN',
+          token_secret: 'TOKEN SECRET',
+          realm: 'NOT REALM'
+        )
+        expect(access_token == access_token2).to be false
+        expect(access_token.eql?(access_token2)).to be false
+      end
     end
   end
 
@@ -508,9 +568,14 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           timestamp: current_time,
           token: 'TOKEN',
           token_secret: 'TOKEN SECRET',
-          signature_method: 'REJECT_THIS'
+          signature_method: 'REJECT_THIS',
+          realm: 'REALM'
         )
-        expect { at.authorization_header }.to raise_error(Cerner::OAuth1a::OAuthError, /signature_method_rejected/)
+        expect { at.authorization_header }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'signature_method_rejected'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
       it 'when signature is calculated and accessor_secret is nil' do
@@ -521,12 +586,17 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: current_time,
           token: 'TOKEN',
-          token_secret: 'TOKEN SECRET'
+          token_secret: 'TOKEN SECRET',
+          realm: 'REALM'
         )
-        expect { at.authorization_header }.to raise_error(Cerner::OAuth1a::OAuthError, /parameter_absent/)
+        expect { at.authorization_header }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'parameter_absent'
+          expect(error.realm).to eq('REALM')
+        end
       end
 
-      it 'when signature is calculated and accessor_secret is nil' do
+      it 'when signature is calculated and token_secret is nil' do
         at = Cerner::OAuth1a::AccessToken.new(
           accessor_secret: 'ACCESSOR SECRET',
           consumer_key: 'CONSUMER KEY',

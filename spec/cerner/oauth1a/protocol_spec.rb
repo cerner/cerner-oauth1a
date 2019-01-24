@@ -65,6 +65,20 @@ RSpec.describe Cerner::OAuth1a::Protocol do
           Cerner::OAuth1a::Protocol.generate_authorization_header(params)
         ).to eq('OAuth key%3Dkey="value1%2Fvalue2"')
       end
+
+      context 'with the realm parameter not percent-encoded' do
+        it 'when params has only the realm entry' do
+          expect(
+            Cerner::OAuth1a::Protocol.generate_authorization_header(realm: 'http://example.com')
+          ).to eq('OAuth realm="http://example.com"')
+        end
+
+        it 'when params has the realm entry and another entry' do
+          expect(
+            Cerner::OAuth1a::Protocol.generate_authorization_header(key: 'value', realm: 'http://example.com')
+          ).to eq('OAuth realm="http://example.com", key="value"')
+        end
+      end
     end
   end
 

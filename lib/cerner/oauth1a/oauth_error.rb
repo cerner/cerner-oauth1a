@@ -18,6 +18,9 @@ module Cerner
       # May be nil.
       attr_reader :oauth_parameters
 
+      # Returns a String with the Protection Realm associated with this error. May be nil.
+      attr_reader :realm
+
       # Public: Construct an instance with a message, optional HTTP response code
       # and optional OAuth Problem string.
       #
@@ -27,19 +30,23 @@ module Cerner
       # oauth_parameters   - A String/Symbol or Array of Strings/Symbols containing the names of parameters that
       #                      are absent or rejected. This is should only be used when oauth_problem
       #                      is 'parameter_absent' or 'parameter_rejected' Optional.
+      # realm              - The protection realm associated with the error. Optional.
       def initialize(
         message,
         http_response_code = nil,
         oauth_problem = nil,
-        oauth_parameters = nil
+        oauth_parameters = nil,
+        realm = nil
       )
         @http_response_code = http_response_code
         @oauth_problem = oauth_problem
         @oauth_parameters = oauth_parameters ? Array(oauth_parameters) : nil
+        @realm = realm
 
         parts = []
         parts << message if message
         parts << "HTTP #{@http_response_code}" if @http_response_code
+        parts << "OAuth Realm #{@realm}" if @realm # TODO: Should this keep the order of the .initialize parameters?
         parts << "OAuth Problem #{@oauth_problem}" if @oauth_problem
         parts << "OAuth Parameters [#{@oauth_parameters.join(', ')}]" if @oauth_parameters
         super(parts.empty? ? nil : parts.join(' '))
@@ -48,9 +55,10 @@ module Cerner
       # Public: Generates an HTTP WWW-Authenticate header value based from the
       # data in this OAuthError.
       #
-      # Returns the generated value or nil if there is no #oauth_problem and #oauth_parameters.
+      # Returns the generated value or nil if there is no #oauth_problem or #realm.
       def to_http_www_authenticate_header
         params = {}
+        params[:realm] = @realm if @realm
         params[:oauth_problem] = @oauth_problem if @oauth_problem
 
         if @oauth_problem && @oauth_parameters

@@ -25,6 +25,8 @@ module Cerner
       attr_reader :consumer_key
       # Returns the String Consumer Secret.
       attr_reader :consumer_secret
+      # Returns the String Protection Realm. The realm is root of the access_token_url (scheme + hostname).
+      attr_reader :realm
 
       # Public: Constructs an instance of the agent.
       #
@@ -72,6 +74,7 @@ module Cerner
         @consumer_secret = consumer_secret
 
         @access_token_url = convert_to_http_uri(access_token_url)
+        @realm = canonical_root_url_for(@access_token_url)
 
         @open_timeout = (open_timeout ? open_timeout.to_i : 5)
         @read_timeout = (read_timeout ? read_timeout.to_i : 5)
@@ -141,6 +144,26 @@ module Cerner
         access_token = retrieve_handle_response(response, timestamp, nonce, accessor_secret)
         @access_token_cache&.put('cerner-oauth/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
         access_token
+      end
+
+      # Public: Constructs an AccessToken using the realm of this agent and the value of an HTTP
+      # Authorization Header based on the OAuth HTTP Authorization Scheme (https://oauth.net/core/1.0a/#auth_header).
+      #
+      # value - A String containing the HTTP Authorization Header value.
+      #
+      # Returns an AccessToken.
+      #
+      # Raises a Cerner::OAuth1a::OAuthError with a populated oauth_problem and realm of this agent
+      # if any of the parameters in the value are invalid.
+      def from_authorization_header(value)
+        params = Protocol.parse_authorization_header(value)
+
+        unless params[:realm].nil? || params[:realm]&.eql?(@realm)
+          raise OAuthError.new('', nil, 'realm_rejected', nil, @realm)
+        end
+
+        # TODO: Is there a better way to get the realm into the token if it's not in the request header?
+        AccessToken.from_authorization_header(value, @realm)
       end
 
       # Public: Generate an Accessor Secret for invocations of the Access Token service.
@@ -215,6 +238,19 @@ module Cerner
         uri
       end
 
+      # Internal: Returns a String containing the canonical root url.
+      #
+      # url - A URL to get the canonical root url String from.
+      #
+      # raises ArgumentError if url is nil.
+      def canonical_root_url_for(url)
+        raise ArgumentError, 'url is nil' unless url
+
+        realm = "#{url.scheme}://#{url.host}"
+        realm += ":#{url.port}" unless url.port == 80 || url.port == 443
+        realm
+      end
+
       # Internal: Prepare a request for #retrieve
       def retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
         # construct a POST request
@@ -252,14 +288,15 @@ module Cerner
             nonce: nonce,
             timestamp: timestamp,
             token: tuples[:oauth_token],
-            token_secret: tuples[:oauth_token_secret]
+            token_secret: tuples[:oauth_token_secret],
+            realm: @realm
           )
           access_token
         else
           # Extract any OAuth Problems reported in the response
           oauth_data = Protocol.parse_authorization_header(response['WWW-Authenticate'])
           # Raise an error for a failure to acquire a token
-          raise OAuthError.new('unable to acquire token', response.code, oauth_data[:oauth_problem])
+          raise OAuthError.new('unable to acquire token', response.code, oauth_data[:oauth_problem], nil, @realm)
         end
       end
 
@@ -278,10 +315,10 @@ module Cerner
         when Net::HTTPSuccess
           parsed_response = JSON.parse(response.body)
           aes_key = parsed_response.dig('aesKey', 'secretKey')
-          raise OAuthError, 'AES secret key retrieved was invalid' unless aes_key
+          raise OAuthError.new('AES secret key retrieved was invalid', nil, nil, nil, @realm) unless aes_key
 
           rsa_key = parsed_response.dig('rsaKey', 'publicKey')
-          raise OAuthError, 'RSA public key retrieved was invalid' unless rsa_key
+          raise OAuthError.new('RSA public key retrieved was invalid', nil, nil, nil, @realm) unless rsa_key
 
           Keys.new(
             version: keys_version,
@@ -292,7 +329,7 @@ module Cerner
           # Extract any OAuth Problems reported in the response
           oauth_data = Protocol.parse_authorization_header(response['WWW-Authenticate'])
           # Raise an error for a failure to acquire keys
-          raise OAuthError.new('unable to acquire keys', response.code, oauth_data[:oauth_problem])
+          raise OAuthError.new('unable to acquire keys', response.code, oauth_data[:oauth_problem], nil, @realm)
         end
       end
     end

@@ -14,6 +14,8 @@ Metrics/BlockLength:
     - spec/**/*.rb
 Metrics/ClassLength:
   Max: 220
+  Exclude:
+    - lib/cerner/oauth1a/access_token.rb
 Metrics/CyclomaticComplexity:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
@@ -28,6 +30,7 @@ Metrics/ParameterLists:
 Metrics/PerceivedComplexity:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
+    - lib/cerner/oauth1a/oauth_error.rb
 Style/GuardClause:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb

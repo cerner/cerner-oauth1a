@@ -43,8 +43,30 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             path: '/oauth/access/keys/token_rejected', response: {
               status: 401,
               content_type: 'text/plain',
-              www_authenticate: 'OAuth realm="http%3A%2F%2Flocalhost", oauth_problem="token_rejected"',
+              www_authenticate: 'OAuth realm="http://localhost", oauth_problem="token_rejected"',
               body: 'TOKEN REJECTED'
+            }
+          },
+          {
+            path: '/oauth/access/keys/missing_secret_key', response: {
+              status: 200,
+              content_type: 'application/json',
+              body: JSON.generate(
+                rsaKey: {
+                  publicKey: Base64.encode64('789012')
+                }
+              )
+            }
+          },
+          {
+            path: '/oauth/access/keys/missing_public_key', response: {
+              status: 200,
+              content_type: 'application/json',
+              body: JSON.generate(
+                aesKey: {
+                  secretKey: Base64.encode64('123456')
+                }
+              )
             }
           }
         ]
@@ -74,7 +96,37 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'CONSUMER KEY',
         consumer_secret: 'CONSUMER SECRET'
       )
-      expect { agent.retrieve_keys('token_rejected') }.to raise_error(Cerner::OAuth1a::OAuthError, /token_rejected/)
+      expect { agent.retrieve_keys('token_rejected') }.to raise_error do |error|
+        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+        expect(error.message).to include 'token_rejected'
+        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
+      end
+    end
+
+    it 'throws OAuthError when the response is missing the secret key' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: "#{@server.base_uri}/oauth/access",
+        consumer_key: 'CONSUMER KEY',
+        consumer_secret: 'CONSUMER SECRET'
+      )
+      expect { agent.retrieve_keys('missing_secret_key') }.to raise_error do |error|
+        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+        expect(error.message).to include 'AES secret key'
+        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
+      end
+    end
+
+    it 'throws OAuthError when the response is missing the public key' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: "#{@server.base_uri}/oauth/access",
+        consumer_key: 'CONSUMER KEY',
+        consumer_secret: 'CONSUMER SECRET'
+      )
+      expect { agent.retrieve_keys('missing_public_key') }.to raise_error do |error|
+        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+        expect(error.message).to include 'RSA public key'
+        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
+      end
     end
   end
 
@@ -97,7 +149,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             path: '/oauth/access_token_rejected', response: {
               status: 401,
               content_type: 'text/plain',
-              www_authenticate: 'OAuth realm="http%3A%2F%2Flocalhost", oauth_problem="token_rejected"',
+              www_authenticate: 'OAuth realm="http://Flocalhost", oauth_problem="token_rejected"',
               body: 'TOKEN REJECTED'
             }
           }
@@ -114,12 +166,14 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       agent = Cerner::OAuth1a::AccessTokenAgent.new(
         access_token_url: "#{@server.base_uri}/oauth/access_success",
         consumer_key: 'CONSUMER KEY',
-        consumer_secret: 'CONSUMER SECRET'
+        consumer_secret: 'CONSUMER SECRET',
+        cache_access_tokens: false
       )
       access_token = agent.retrieve
       expect(access_token.consumer_key).to eq 'CONSUMER KEY'
       expect(access_token.token).to eq 'TOKEN'
       expect(access_token.token_secret).to eq 'TOKEN SECRET'
+      expect(access_token.realm).to eq @server.base_uri
     end
 
     it 'throw OAuthError with token_rejected oauth_problem' do
@@ -129,7 +183,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_secret: 'CONSUMER SECRET',
         cache_access_tokens: false
       )
-      expect { agent.retrieve }.to raise_error(Cerner::OAuth1a::OAuthError, /token_rejected/)
+      expect { agent.retrieve }.to raise_error do |error|
+        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+        expect(error.message).to include 'token_rejected'
+        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
+      end
     end
   end
 
@@ -229,6 +287,27 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
                                               consumer_key: 'KEY',
                                               consumer_secret: 'SECRET')
       end.to raise_error ArgumentError, /access_token_url/
+    end
+
+    it 'sets the realm from the canonical root URI of the access_token_url with default http port' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost/oauth/access',
+                                                    consumer_key: 'KEY',
+                                                    consumer_secret: 'SECRET')
+      expect(agent.realm).to eq('http://localhost')
+    end
+
+    it 'sets the realm from the canonical root URI of the access_token_url with default https port' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'https://localhost/oauth/access',
+                                                    consumer_key: 'KEY',
+                                                    consumer_secret: 'SECRET')
+      expect(agent.realm).to eq('https://localhost')
+    end
+
+    it 'sets the realm from the canonical root URI of the access_token_url with non-default port' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost:8080/oauth/access',
+                                                    consumer_key: 'KEY',
+                                                    consumer_secret: 'SECRET')
+      expect(agent.realm).to eq('http://localhost:8080')
     end
   end
 end
