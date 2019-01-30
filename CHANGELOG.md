@@ -1,4 +1,4 @@
-# v2.1.0
+# v2.0.1
 Allow parsing authorization headers that do not include an oauth_version parameter as per
 the spec:
 

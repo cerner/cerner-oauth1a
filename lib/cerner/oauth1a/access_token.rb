@@ -22,7 +22,7 @@ module Cerner
       def self.from_authorization_header(value)
         params = Protocol.parse_authorization_header(value)
 
-        unless params[:oauth_version].nil? || params[:oauth_version]&.eql?('1.0')
+        if params[:oauth_version] && !params[:oauth_version].eql?('1.0')
           raise OAuthError.new('', nil, 'version_rejected')
         end
 
