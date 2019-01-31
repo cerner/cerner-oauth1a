@@ -73,9 +73,9 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
       oauth_error = Cerner::OAuth1a::OAuthError.new('MESSAGE', 401, 'parameter_absent', 'param1', 'http://example.com')
       expect(oauth_error.message).to eq('MESSAGE ' \
                                         'HTTP 401 ' \
-                                        'OAuth Realm http://example.com ' \
                                         'OAuth Problem parameter_absent ' \
-                                        'OAuth Parameters [param1]')
+                                        'OAuth Parameters [param1] ' \
+                                        'OAuth Realm http://example.com')
       expect(oauth_error.http_response_code).to eq(401)
       expect(oauth_error.oauth_problem).to eq('parameter_absent')
       expect(oauth_error.oauth_parameters).to eq(['param1'])

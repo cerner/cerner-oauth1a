@@ -46,9 +46,9 @@ module Cerner
         parts = []
         parts << message if message
         parts << "HTTP #{@http_response_code}" if @http_response_code
-        parts << "OAuth Realm #{@realm}" if @realm # TODO: Should this keep the order of the .initialize parameters?
         parts << "OAuth Problem #{@oauth_problem}" if @oauth_problem
         parts << "OAuth Parameters [#{@oauth_parameters.join(', ')}]" if @oauth_parameters
+        parts << "OAuth Realm #{@realm}" if @realm
         super(parts.empty? ? nil : parts.join(' '))
       end
 
