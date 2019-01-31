@@ -146,26 +146,6 @@ module Cerner
         access_token
       end
 
-      # Public: Constructs an AccessToken using the realm of this agent and the value of an HTTP
-      # Authorization Header based on the OAuth HTTP Authorization Scheme (https://oauth.net/core/1.0a/#auth_header).
-      #
-      # value - A String containing the HTTP Authorization Header value.
-      #
-      # Returns an AccessToken.
-      #
-      # Raises a Cerner::OAuth1a::OAuthError with a populated oauth_problem and realm of this agent
-      # if any of the parameters in the value are invalid.
-      def from_authorization_header(value)
-        params = Protocol.parse_authorization_header(value)
-
-        unless params[:realm].nil? || params[:realm]&.eql?(@realm)
-          raise OAuthError.new('', nil, 'realm_rejected', nil, @realm)
-        end
-
-        # TODO: Is there a better way to get the realm into the token if it's not in the request header?
-        AccessToken.from_authorization_header(value, @realm)
-      end
-
       # Public: Generate an Accessor Secret for invocations of the Access Token service.
       #
       # Returns a String containing the secret.

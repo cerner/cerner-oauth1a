@@ -24,7 +24,7 @@ module Cerner
       #
       # Raises a Cerner::OAuth1a::OAuthError with a populated oauth_problem if any of the parameters
       # in the value are invalid.
-      def self.from_authorization_header(value, realm = nil)
+      def self.from_authorization_header(value)
         params = Protocol.parse_authorization_header(value)
 
         if params[:oauth_version] && !params[:oauth_version].eql?('1.0')
@@ -45,7 +45,7 @@ module Cerner
         signature = params[:oauth_signature]
         missing_params << :oauth_signature if signature.nil? || signature.empty?
 
-        raise OAuthError.new('', nil, 'parameter_absent', missing_params, realm) unless missing_params.empty?
+        raise OAuthError.new('', nil, 'parameter_absent', missing_params) unless missing_params.empty?
 
         AccessToken.new(
           consumer_key: consumer_key,
@@ -54,7 +54,7 @@ module Cerner
           token: token,
           signature_method: signature_method,
           signature: signature,
-          realm: realm || params[:realm]
+          realm: params[:realm]
         )
       end
 
@@ -186,6 +186,13 @@ module Cerner
       # Raises Cerner::OAuth1a::OAuthError with an oauth_problem if authentication fails.
       def authenticate(access_token_agent)
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
+
+        if @realm && !@realm.eql?(access_token_agent.realm)
+          raise OAuthError.new('realm does not match provider', nil, 'realm_rejected', nil, access_token_agent.realm)
+        end
+
+        # Set realm to the provider's realm if it's not already set
+        @realm ||= access_token_agent.realm
 
         unless @signature_method == 'PLAINTEXT'
           raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)

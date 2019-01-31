@@ -113,6 +113,24 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect { at.authenticate(nil) }.to raise_error ArgumentError
       end
 
+      it 'when realm does not match agent realm' do
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: 'CONSUMER KEY',
+          nonce: 'NONCE',
+          timestamp: Time.now,
+          token: 'TOKEN',
+          signature_method: 'REJECT_THIS',
+          realm: 'REALM'
+        )
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).twice.and_return('AGENT REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'realm_rejected'
+          expect(error.realm).to eq('AGENT REALM')
+        end
+      end
+
       it 'when signature_method is not PLAINTEXT' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
@@ -122,7 +140,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           signature_method: 'REJECT_THIS',
           realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'signature_method_rejected'
           expect(error.realm).to eq('REALM')
@@ -137,7 +157,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           token: 'ConsumerKey=WRONG%20CONSUMER%20KEY',
           realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'consumer_key_rejected'
           expect(error.realm).to eq('REALM')
@@ -152,7 +174,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           token: 'ConsumerKey=CONSUMER%20KEY',
           realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'missing ExpiresOn'
           expect(error.realm).to eq('REALM')
@@ -167,7 +191,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
           realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'token_expired'
           expect(error.realm).to eq('REALM')
@@ -182,7 +208,9 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
           realm: 'REALM'
         )
-        expect { at.authenticate(double('AccessTokenAgent')) }.to raise_error do |error|
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'missing KeysVersion'
           expect(error.realm).to eq('REALM')
@@ -201,6 +229,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(ata).to(
           receive(:retrieve_keys).with('2').and_raise(Cerner::OAuth1a::OAuthError, 'invalid keys')
         )
+        expect(ata).to receive(:realm).and_return('REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'token references invalid keys version'
@@ -220,6 +249,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(keys).to receive(:verify_rsasha1_signature).and_return(false)
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'not authentic'
@@ -233,6 +263,26 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          realm: 'REALM'
+        )
+        keys = double('Keys')
+        expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
+        expect { at.authenticate(ata) }.to raise_error do |error|
+          expect(error).to be_a(Cerner::OAuth1a::OAuthError)
+          expect(error.message).to include 'missing signature'
+          expect(error.realm).to eq('REALM')
+        end
+      end
+
+      it 'when HMACSecrets is missing' do
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: 'CONSUMER KEY',
+          nonce: 'NONCE',
+          timestamp: Time.now,
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -240,6 +290,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'missing HMACSecrets'
@@ -261,6 +312,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(keys).to receive(:decrypt_hmac_secrets).with('SECRETS').and_raise(ArgumentError, 'SIMULATED_FAILURE')
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'SIMULATED_FAILURE'
@@ -286,6 +338,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
           expect(error.message).to include 'signature_invalid'
@@ -312,6 +365,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect(at.authenticate(ata)).to eq({})
       end
 
@@ -336,9 +390,35 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
         ata = double('AccessTokenAgent')
         expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('REALM')
         expect(at.consumer_principal).to be(nil)
         expect(at.authenticate(ata)).to eq('Extra': 'SOMETHING')
         expect(at.consumer_principal).to eq('CONSUMER PRINCIPAL')
+      end
+    end
+
+    context 'sets the realm from the agent' do
+      it 'when the token realm is nil' do
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: 'CONSUMER KEY',
+          nonce: 'NONCE',
+          timestamp: Time.now,
+          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          signature: 'CONSUMER SECRET&TOKEN SECRET'
+        )
+        keys = double('Keys')
+        expect(keys).to receive(:verify_rsasha1_signature).and_return(true)
+        expect(keys).to(
+          receive(:decrypt_hmac_secrets)
+            .with('SECRETS')
+            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+        )
+        ata = double('AccessTokenAgent')
+        expect(ata).to receive(:retrieve_keys).with('1').and_return(keys)
+        expect(ata).to receive(:realm).and_return('AGENT REALM')
+        expect(at.realm).to be_nil
+        expect(at.authenticate(ata)).to eq({})
+        expect(at.realm).to eq('AGENT REALM')
       end
     end
   end
