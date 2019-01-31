@@ -83,6 +83,20 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         )
       end
     end
+
+    context 'does not raise error' do
+      it 'when oauth_version is not present' do
+        access_token = Cerner::OAuth1a::AccessToken.from_authorization_header(
+          'OAuth oauth_consumer_key="consumer key", ' \
+          'oauth_nonce="nonce", ' \
+          'oauth_timestamp="1", ' \
+          'oauth_token="token", ' \
+          'oauth_signature_method="PLAINTEXT", ' \
+          'oauth_signature="signature"'
+        )
+        expect(access_token).to be_a(Cerner::OAuth1a::AccessToken)
+      end
+    end
   end
 
   describe '#authenticate' do
