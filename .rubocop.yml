@@ -2,6 +2,7 @@ AllCops:
   TargetRubyVersion: 2.4
   Exclude:
     - bin/*
+    - tmp/**/*
 Layout/EmptyLinesAroundModuleBody:
   Enabled: false
 Metrics/AbcSize:
@@ -21,7 +22,7 @@ Metrics/CyclomaticComplexity:
 Metrics/LineLength:
   Max: 120
 Metrics/MethodLength:
-  Max: 25
+  Max: 30
 Metrics/ParameterLists:
   Max: 10
 Metrics/PerceivedComplexity:
