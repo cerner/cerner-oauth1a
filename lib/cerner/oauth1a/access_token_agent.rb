@@ -227,7 +227,7 @@ module Cerner
         raise ArgumentError, 'url is nil' unless url
 
         realm = "#{url.scheme}://#{url.host}"
-        realm += ":#{url.port}" unless url.port == 80 || url.port == 443
+        realm += ":#{url.port}" unless url.port == url.default_port
         realm
       end
 
