@@ -13,11 +13,6 @@ module Cerner
       # Public: Constructs an AccessToken using the value of an HTTP Authorization Header based on
       # the OAuth HTTP Authorization Scheme (https://oauth.net/core/1.0a/#auth_header).
       #
-      # If this token is associated to a particular realm (e.g. will be authenticated against a
-      # particular agent), then use AccessTokenAgent#from_authorization_header of the corresponding
-      # agent pass the optional realm value. Otherwise the realm will be nil or parsed from the value in
-      # the header (which will perform no realm validation).
-      #
       # value - A String containing the HTTP Authorization Header value.
       #
       # Returns an AccessToken.
