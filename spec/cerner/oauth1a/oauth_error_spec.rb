@@ -59,6 +59,28 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
       expect(oauth_error.oauth_problem).to eq('parameter_absent')
       expect(oauth_error.oauth_parameters).to eq(['param1', 'param2'])
     end
+
+    it 'constructs with message and realm' do
+      oauth_error = Cerner::OAuth1a::OAuthError.new('MESSAGE', nil, nil, nil, 'http://example.com')
+      expect(oauth_error.message).to eq('MESSAGE OAuth Realm http://example.com')
+      expect(oauth_error.http_response_code).to be_nil
+      expect(oauth_error.oauth_problem).to be_nil
+      expect(oauth_error.oauth_parameters).to be_nil
+      expect(oauth_error.realm).to eq('http://example.com')
+    end
+
+    it 'constructs with message, HTTP response code, OAuth Problem, one OAuth Parameter, and realm' do
+      oauth_error = Cerner::OAuth1a::OAuthError.new('MESSAGE', 401, 'parameter_absent', 'param1', 'http://example.com')
+      expect(oauth_error.message).to eq('MESSAGE ' \
+                                        'HTTP 401 ' \
+                                        'OAuth Problem parameter_absent ' \
+                                        'OAuth Parameters [param1] ' \
+                                        'OAuth Realm http://example.com')
+      expect(oauth_error.http_response_code).to eq(401)
+      expect(oauth_error.oauth_problem).to eq('parameter_absent')
+      expect(oauth_error.oauth_parameters).to eq(['param1'])
+      expect(oauth_error.realm).to eq('http://example.com')
+    end
   end
 
   describe '#to_http_www_authenticate_header' do
@@ -69,14 +91,12 @@ RSpec.describe Cerner::OAuth1a::OAuthError do
       end
     end
 
-    context 'returns nil' do
-      it 'when oauth_problem is not present' do
-        oe = Cerner::OAuth1a::OAuthError.new('message')
-        expect(oe.to_http_www_authenticate_header).to be_nil
-      end
-    end
-
     context 'returns String' do
+      it 'when oauth_problem is nil but realm is present' do
+        oe = Cerner::OAuth1a::OAuthError.new('message', nil, nil, nil, 'http://example.org')
+        expect(oe.to_http_www_authenticate_header).to eq('OAuth realm="http://example.org"')
+      end
+
       it 'when oauth_problem is present' do
         oe = Cerner::OAuth1a::OAuthError.new('message', nil, 'token_rejected')
         expect(oe.to_http_www_authenticate_header).to eq('OAuth oauth_problem="token_rejected"')

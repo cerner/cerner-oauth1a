@@ -48,7 +48,8 @@ module Cerner
           timestamp: timestamp,
           token: token,
           signature_method: signature_method,
-          signature: signature
+          signature: signature,
+          realm: params[:realm]
         )
       end
 
@@ -74,6 +75,8 @@ module Cerner
       # This value is only populated after a successful #authenticate and only if the #token (oauth_token)
       # contains a 'Consumer.Principal' parameter.
       attr_reader :consumer_principal
+      # Returns a String, but may be nil, with the Protection Realm related to this token.
+      attr_reader :realm
 
       # Public: Constructs an instance.
       #
@@ -93,6 +96,8 @@ module Cerner
       #                                 Defaults to PLAINTEXT.
       #             :signature        - The optional String representing the signature.
       #                                 Defaults to nil.
+      #             :realm            - The optional String representing the protection realm.
+      #                                 Defaults to nil.
       #
       # Raises ArgumentError if consumer_key, nonce, timestamp, token or signature_method is nil.
       def initialize(
@@ -104,7 +109,8 @@ module Cerner
         signature_method: 'PLAINTEXT',
         timestamp:,
         token:,
-        token_secret: nil
+        token_secret: nil,
+        realm: nil
       )
         raise ArgumentError, 'consumer_key is nil' unless consumer_key
         raise ArgumentError, 'nonce is nil' unless nonce
@@ -122,6 +128,7 @@ module Cerner
         @timestamp = convert_to_time(timestamp)
         @token = token
         @token_secret = token_secret || nil
+        @realm = realm || nil
       end
 
       # Public: Generates a value suitable for use as an HTTP Authorization header. If #signature is
@@ -136,7 +143,7 @@ module Cerner
         return @authorization_header if @authorization_header
 
         unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected')
+          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
         end
 
         if @signature
@@ -144,10 +151,11 @@ module Cerner
         elsif @accessor_secret && @token_secret
           sig = "#{@accessor_secret}&#{@token_secret}"
         else
-          raise OAuthError.new('accessor_secret or token_secret is nil', nil, 'parameter_absent')
+          raise OAuthError.new('accessor_secret or token_secret is nil', nil, 'parameter_absent', nil, @realm)
         end
 
         tuples = {
+          realm: @realm,
           oauth_version: '1.0',
           oauth_signature_method: @signature_method,
           oauth_signature: sig,
@@ -174,14 +182,21 @@ module Cerner
       def authenticate(access_token_agent)
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
 
+        if @realm && !@realm.eql?(access_token_agent.realm)
+          raise OAuthError.new('realm does not match provider', nil, 'token_rejected', nil, access_token_agent.realm)
+        end
+
+        # Set realm to the provider's realm if it's not already set
+        @realm ||= access_token_agent.realm
+
         unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected')
+          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
         end
 
         tuples = Protocol.parse_url_query_string(@token)
 
         unless @consumer_key == tuples.delete(:ConsumerKey)
-          raise OAuthError.new('consumer keys do not match', nil, 'consumer_key_rejected')
+          raise OAuthError.new('consumer keys do not match', nil, 'consumer_key_rejected', nil, @realm)
         end
 
         verify_expiration(tuples.delete(:ExpiresOn))
@@ -232,7 +247,8 @@ module Cerner
           token == other.token &&
           token_secret == other.token_secret &&
           signature_method == other.signature_method &&
-          signature == other.signature
+          signature == other.signature &&
+          realm == other.realm
       end
 
       # Public: Compare this to other based on the attributes. Equivalent to calling #==.
@@ -258,7 +274,8 @@ module Cerner
           token_secret: @token_secret,
           signature_method: @signature_method,
           signature: @signature,
-          consumer_principal: @consumer_principal
+          consumer_principal: @consumer_principal,
+          realm: @realm
         }
       end
 
@@ -290,7 +307,8 @@ module Cerner
             'token missing ExpiresOn',
             nil,
             'oauth_parameters_rejected',
-            'oauth_token'
+            'oauth_token',
+            @realm
           )
         end
 
@@ -300,7 +318,9 @@ module Cerner
           raise OAuthError.new(
             'token has expired',
             nil,
-            'token_expired'
+            'token_expired',
+            nil,
+            @realm
           )
         end
       end
@@ -311,14 +331,21 @@ module Cerner
             'token missing KeysVersion',
             nil,
             'oauth_parameters_rejected',
-            'oauth_token'
+            'oauth_token',
+            @realm
           )
         end
 
         begin
           access_token_agent.retrieve_keys(keys_version)
         rescue OAuthError
-          raise OAuthError.new('token references invalid keys version', nil, 'oauth_parameters_rejected', 'oauth_token')
+          raise OAuthError.new(
+            'token references invalid keys version',
+            nil,
+            'oauth_parameters_rejected',
+            'oauth_token',
+            @realm
+          )
         end
       end
 
@@ -329,7 +356,7 @@ module Cerner
       # Raises OAuthError if the parameter is not authentic
       def verify_token(keys)
         unless keys.verify_rsasha1_signature(@token)
-          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token')
+          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
         end
       end
 
@@ -341,8 +368,12 @@ module Cerner
       # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
       # not match the secrets
       def verify_signature(keys, hmac_secrets)
-        raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature') unless @signature
-        raise OAuthError.new('missing HMACSecrets', nil, 'oauth_parameters_rejected', 'oauth_token') unless hmac_secrets
+        unless @signature
+          raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature', @realm)
+        end
+        unless hmac_secrets
+          raise OAuthError.new('missing HMACSecrets', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
+        end
 
         begin
           secrets = keys.decrypt_hmac_secrets(hmac_secrets)
@@ -351,14 +382,17 @@ module Cerner
             "unable to decrypt HMACSecrets: #{e.message}",
             nil,
             'oauth_parameters_rejected',
-            'oauth_token'
+            'oauth_token',
+            @realm
           )
         end
 
         secrets_parts = Protocol.parse_url_query_string(secrets)
         expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
 
-        raise OAuthError.new('signature is not valid', nil, 'signature_invalid') unless @signature == expected_signature
+        unless @signature == expected_signature
+          raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
+        end
       end
     end
   end

@@ -1,3 +1,10 @@
+# v2.1.0
+Added an attribute for the Protection Realm to Cerner::OAuth1a::AccessTokenAgent, 
+Cerner::OAuth1a::AccessToken, and Cerner::OAuth1a::OAuthError. This value will be
+parsed as the canonical root URI of the agent's configured access_token_url. When
+this value is available, it will be added to errors and generated authorization
+headers.
+
 # v2.0.1
 Allow parsing authorization headers that do not include an oauth_version parameter as per
 the spec:
