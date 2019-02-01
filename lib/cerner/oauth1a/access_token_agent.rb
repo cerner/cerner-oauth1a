@@ -226,9 +226,8 @@ module Cerner
       def canonical_root_url_for(url)
         raise ArgumentError, 'url is nil' unless url
 
-        realm = "#{url.scheme}://#{url.host}"
-        realm += ":#{url.port}" unless url.port == url.default_port
-        realm
+        realm = URI("#{url.scheme}://#{url.host}:#{url.port}")
+        realm.to_s
       end
 
       # Internal: Prepare a request for #retrieve
