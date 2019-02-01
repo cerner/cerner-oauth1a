@@ -126,7 +126,7 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
         expect(ata).to receive(:realm).twice.and_return('AGENT REALM')
         expect { at.authenticate(ata) }.to raise_error do |error|
           expect(error).to be_a(Cerner::OAuth1a::OAuthError)
-          expect(error.message).to include 'realm_rejected'
+          expect(error.message).to include 'token_rejected'
           expect(error.realm).to eq('AGENT REALM')
         end
       end

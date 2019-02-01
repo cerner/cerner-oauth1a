@@ -183,7 +183,7 @@ module Cerner
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
 
         if @realm && !@realm.eql?(access_token_agent.realm)
-          raise OAuthError.new('realm does not match provider', nil, 'realm_rejected', nil, access_token_agent.realm)
+          raise OAuthError.new('realm does not match provider', nil, 'token_rejected', nil, access_token_agent.realm)
         end
 
         # Set realm to the provider's realm if it's not already set
