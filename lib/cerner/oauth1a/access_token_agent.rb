@@ -102,14 +102,14 @@ module Cerner
         raise ArgumentError, 'keys_version is nil' unless keys_version
 
         if @keys_cache && !ignore_cache
-          cache_entry = @keys_cache.get('cerner-oauth/keys', keys_version)
+          cache_entry = @keys_cache.get('cerner-oauth1a/keys', keys_version)
           return cache_entry.value if cache_entry
         end
 
         request = retrieve_keys_prepare_request(keys_version)
         response = http_client.request(request)
         keys = retrieve_keys_handle_response(keys_version, response)
-        @keys_cache&.put('cerner-oauth/keys', keys_version, Cache::KeysEntry.new(keys, Cache::TWENTY_FOUR_HOURS))
+        @keys_cache&.put('cerner-oauth1a/keys', keys_version, Cache::KeysEntry.new(keys, Cache::TWENTY_FOUR_HOURS))
         keys
       end
 
@@ -130,7 +130,7 @@ module Cerner
       def retrieve(principal: nil, ignore_cache: false)
         cache_key = "#{@consumer_key}&#{principal}"
         if @access_token_cache && !ignore_cache
-          cache_entry = @access_token_cache.get('cerner-oauth/access-tokens', cache_key)
+          cache_entry = @access_token_cache.get('cerner-oauth1a/access-tokens', cache_key)
           return cache_entry.value if cache_entry
         end
 
@@ -142,7 +142,7 @@ module Cerner
         request = retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
         response = http_client.request(request)
         access_token = retrieve_handle_response(response, timestamp, nonce, accessor_secret)
-        @access_token_cache&.put('cerner-oauth/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
+        @access_token_cache&.put('cerner-oauth1a/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
         access_token
       end
 
