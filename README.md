@@ -1,6 +1,6 @@
 # Cerner OAuth 1.0a Consumer and Service Provider Library
 
-[![Build Status](https://api.travis-ci.org/cerner/cerner-oauth1a.svg)](https://travis-ci.org/cerner/cerner-oauth1a)
+[![Build Status](https://api.travis-ci.com/cerner/cerner-oauth1a.svg)](https://travis-ci.com/cerner/cerner-oauth1a)
 [![Gem Version](http://img.shields.io/gem/v/cerner-oauth1a.svg)](https://rubygems.org/gems/cerner-oauth1a)
 [![Code Climate](http://img.shields.io/codeclimate/github/cerner/cerner-oauth1a.svg)](https://codeclimate.com/github/cerner/cerner-oauth1a)
 
