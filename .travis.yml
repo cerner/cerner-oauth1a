@@ -1,12 +1,22 @@
 language: ruby
-rvm:
-  - ruby-2.4
-  - ruby-2.5
-  - ruby-2.6
-  - ruby-head
 before_install: gem install bundler
 script: bin/rspec
 matrix:
+  include:
+    - name: "Ruby 2.4.x"
+      rvm: ruby-2.4
+    - name: "Ruby 2.5.x"
+      rvm: ruby-2.5
+    - name: "Ruby 2.6.x"
+      rvm: ruby-2.6
+    - name: "Ruby 2.6.x with JIT"
+      rvm: ruby-2.6
+      env: RUBYOPT="--jit"
+    - name: "Ruby HEAD"
+      rvm: ruby-head
+    - name: "Ruby HEAD with JIT"
+      rvm: ruby-head
+      env: RUBYOPT="--jit"
   allow_failures:
     - rvm: ruby-head
   fast_finish: true
