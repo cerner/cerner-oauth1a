@@ -1,3 +1,5 @@
+# v2.3.0
+
 # v2.2.0
 Renamed the cache key prefixes from 'cerner-oauth' cache prefixes to 'cerner-oauth1a'.
 

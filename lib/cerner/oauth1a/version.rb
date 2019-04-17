@@ -2,6 +2,6 @@
 
 module Cerner
   module OAuth1a
-    VERSION = '2.2.0'
+    VERSION = '2.3.0'
   end
 end
