@@ -1,4 +1,7 @@
 # v2.3.0
+Added Protection Realm Equivalence feature to Cerner::OAuth1a::AccessTokenAgent,
+which is used by Cerner::OAuth1a::AccessToken#authenticate when comparing realms.
+This allows for realm aliases, so that the OAuth Service can transition hosts.
 
 # v2.2.0
 Renamed the cache key prefixes from 'cerner-oauth' cache prefixes to 'cerner-oauth1a'.

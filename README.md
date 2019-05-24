@@ -59,7 +59,7 @@ implement that:
     authz_header = request['Authorization']
 
     # Parse the header value
-    access_token = AccessToken.from_authorization_header(authz_header)
+    access_token = Cerner::OAuth1a::AccessToken.from_authorization_header(authz_header)
 
     # Authenticate the Access Token
     # Note: An AccessTokenAgent, configured with a System Account that has been granted privileges

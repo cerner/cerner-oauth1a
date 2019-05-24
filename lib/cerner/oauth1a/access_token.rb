@@ -168,7 +168,9 @@ module Cerner
       end
 
       # Public: Authenticates the #token against the #consumer_key, #signature and side-channel
-      # secrets exchange via AccessTokenAgent#retrieve_keys.
+      # secrets exchange via AccessTokenAgent#retrieve_keys. If this instance has a #realm set,
+      # then it will compare it to the AccessTokenAgent#realm using the AccessTokenAgent#realm_eql?
+      # method.
       #
       # access_token_agent - An instance of Cerner::OAuth1a::AccessTokenAgent configured with
       #                      appropriate credentials to retrieve secrets via
@@ -182,7 +184,7 @@ module Cerner
       def authenticate(access_token_agent)
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
 
-        if @realm && !@realm.eql?(access_token_agent.realm)
+        if @realm && !access_token_agent.realm_eql?(@realm)
           raise OAuthError.new('realm does not match provider', nil, 'token_rejected', nil, access_token_agent.realm)
         end
 

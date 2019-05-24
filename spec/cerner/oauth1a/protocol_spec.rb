@@ -5,6 +5,32 @@ require 'spec_helper'
 require 'cerner/oauth1a/protocol'
 
 RSpec.describe Cerner::OAuth1a::Protocol do
+  describe '.realm_for' do
+    it 'raises ArgumentError with nil input' do
+      expect { Cerner::OAuth1a::Protocol.realm_for(nil) }.to raise_error ArgumentError
+    end
+
+    context 'returns rooted and canonical URL String' do
+      it 'when input includes a path' do
+        expect(
+          Cerner::OAuth1a::Protocol.realm_for(URI('https://oauth-api.cerner.com/oauth/access'))
+        ).to eq('https://oauth-api.cerner.com')
+      end
+
+      it 'when input does not include a path' do
+        expect(
+          Cerner::OAuth1a::Protocol.realm_for(URI('https://oauth-api.cerner.com'))
+        ).to eq('https://oauth-api.cerner.com')
+      end
+
+      it 'when input includes a port' do
+        expect(
+          Cerner::OAuth1a::Protocol.realm_for(URI('https://oauth-api.cerner.com:8443'))
+        ).to eq('https://oauth-api.cerner.com:8443')
+      end
+    end
+  end
+
   describe '.parse_url_query_string' do
     it 'raises ArgumentError with nil input' do
       expect { Cerner::OAuth1a::Protocol.parse_url_query_string(nil) }.to raise_error ArgumentError
