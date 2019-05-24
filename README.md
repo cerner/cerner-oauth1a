@@ -22,7 +22,7 @@ for implementing a Ruby-based service.
 
     # Setup the AccessTokenAgent with an Access Token Service's URL, a Key and a Secret
     agent = Cerner::OAuth1a::AccessTokenAgent.new(
-      access_token_url: 'https://api.cernercare.com/oauth/access',
+      access_token_url: 'https://oauth-api.cerner.com/oauth/access',
       consumer_key: 'CONSUMER_KEY',
       consumer_secret: 'CONSUMER_SECRET'
     )

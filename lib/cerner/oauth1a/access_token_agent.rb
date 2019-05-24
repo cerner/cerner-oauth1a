@@ -22,6 +22,10 @@ module Cerner
       DEFAULT_REALM_ALIASES = {
         'https://oauth-api.cerner.com' => ['https://api.cernercare.com'].freeze,
         'https://api.cernercare.com' => ['https://oauth-api.cerner.com'].freeze,
+        'https://oauth-api.sandboxcerner.com' => ['https://api.sandboxcernercare.com'].freeze,
+        'https://api.sandboxcernercare.com' => ['https://oauth-api.sandboxcerner.com'].freeze,
+        'https://oauth-api.devcerner.com' => ['https://api.devcernercare.com'].freeze,
+        'https://api.devcernercare.com' => ['https://oauth-api.devcerner.com'].freeze
       }.freeze
 
       # Returns the URI Access Token URL.
@@ -88,7 +92,7 @@ module Cerner
         @access_token_url = convert_to_http_uri(access_token_url)
         @realm = Protocol.realm_for(@access_token_url)
         @realm_aliases = realm_aliases
-        @realm_aliases = DEFAULT_REALM_ALIASES[@realm] unless @realm_aliases
+        @realm_aliases ||= DEFAULT_REALM_ALIASES[@realm]
 
         @open_timeout = (open_timeout ? open_timeout.to_i : 5)
         @read_timeout = (read_timeout ? read_timeout.to_i : 5)
