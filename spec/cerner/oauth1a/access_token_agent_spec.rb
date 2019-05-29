@@ -10,6 +10,59 @@ require 'cerner/oauth1a/oauth_error'
 require 'json'
 
 RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
+  describe '#realm_eql?' do
+    context 'initalized realm_aliases to empty' do
+      it 'returns true' do
+        agent = Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'https://oauth-api.cerner.com/oauth/access',
+          consumer_key: 'CONSUMER KEY',
+          consumer_secret: 'CONSUMER SECRET',
+          realm_aliases: []
+        )
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+      end
+
+      it 'returns false' do
+        agent = Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'https://api.cernercare.com/oauth/access',
+          consumer_key: 'CONSUMER KEY',
+          consumer_secret: 'CONSUMER SECRET',
+          realm_aliases: []
+        )
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be false
+      end
+    end
+
+    context 'initalized realm_aliases to default' do
+      it 'returns true when the same' do
+        agent = Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'https://oauth-api.cerner.com/oauth/access',
+          consumer_key: 'CONSUMER KEY',
+          consumer_secret: 'CONSUMER SECRET'
+        )
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+      end
+
+      it 'returns true when an alias' do
+        agent = Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'https://api.cernercare.com/oauth/access',
+          consumer_key: 'CONSUMER KEY',
+          consumer_secret: 'CONSUMER SECRET'
+        )
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+      end
+
+      it 'returns false' do
+        agent = Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'https://api.cernercare.com/oauth/access',
+          consumer_key: 'CONSUMER KEY',
+          consumer_secret: 'CONSUMER SECRET'
+        )
+        expect(agent.realm_eql?('https://not-equal')).to be false
+      end
+    end
+  end
+
   describe '#retrieve_keys' do
     before(:all) do
       @server = MockAccessTokenServer.new(

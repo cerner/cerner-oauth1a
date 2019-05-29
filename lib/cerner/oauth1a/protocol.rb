@@ -134,6 +134,22 @@ module Cerner
 
         default
       end
+
+      # Public: Returns a String containing a realm value from the URI. The
+      # String will be a rooted (path removed) and canonicalized URL of the
+      # URL passed.
+      #
+      # uri - A URI instance containing the URL to construct the realm for.
+      #
+      # Returns a String containing the realm value.
+      #
+      # Raises ArgumentError if uri is nil.
+      def self.realm_for(uri)
+        raise ArgumentError, 'uri is nil' unless uri
+
+        realm = URI("#{uri.scheme}://#{uri.host}:#{uri.port}")
+        realm.to_s
+      end
     end
   end
 end

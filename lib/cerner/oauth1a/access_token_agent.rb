@@ -19,14 +19,25 @@ module Cerner
     class AccessTokenAgent
       MIME_WWW_FORM_URL_ENCODED = 'application/x-www-form-urlencoded'
 
+      DEFAULT_REALM_ALIASES = {
+        'https://oauth-api.cerner.com' => ['https://api.cernercare.com'].freeze,
+        'https://api.cernercare.com' => ['https://oauth-api.cerner.com'].freeze,
+        'https://oauth-api.sandboxcerner.com' => ['https://api.sandboxcernercare.com'].freeze,
+        'https://api.sandboxcernercare.com' => ['https://oauth-api.sandboxcerner.com'].freeze,
+        'https://oauth-api.devcerner.com' => ['https://api.devcernercare.com'].freeze,
+        'https://api.devcernercare.com' => ['https://oauth-api.devcerner.com'].freeze
+      }.freeze
+
       # Returns the URI Access Token URL.
       attr_reader :access_token_url
       # Returns the String Consumer Key.
       attr_reader :consumer_key
       # Returns the String Consumer Secret.
       attr_reader :consumer_secret
-      # Returns the String Protection Realm. The realm is root of the access_token_url (scheme + hostname).
+      # Returns the String Protection Realm. The realm is root of the access_token_url (Protocol#realm_for).
       attr_reader :realm
+      # Returns the Array of Protection Realm String that are considered equivalent (#realm_eql?) to #realm.
+      attr_reader :realm_aliases
 
       # Public: Constructs an instance of the agent.
       #
@@ -55,6 +66,10 @@ module Cerner
       #                                    #retrieve_keys. (optional, default: true)
       #             :cache_access_tokens - A Boolean for configuring AccessToken caching within
       #                                    #retrieve. (optional, default: true)
+      #             :realm_aliases       - An Array of Strings that provide realm aliases for the
+      #                                    realm that's extracted from :access_token_url. If nil,
+      #                                    this will be initalized with the DEFAULT_REALM_ALIASES.
+      #                                    (optional, default: nil)
       #
       # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if
       #                      access_token_url is an invalid URI.
@@ -65,7 +80,8 @@ module Cerner
         open_timeout: 5,
         read_timeout: 5,
         cache_keys: true,
-        cache_access_tokens: true
+        cache_access_tokens: true,
+        realm_aliases: nil
       )
         raise ArgumentError, 'consumer_key is nil' unless consumer_key
         raise ArgumentError, 'consumer_secret is nil' unless consumer_secret
@@ -74,7 +90,9 @@ module Cerner
         @consumer_secret = consumer_secret
 
         @access_token_url = convert_to_http_uri(access_token_url)
-        @realm = canonical_root_url_for(@access_token_url)
+        @realm = Protocol.realm_for(@access_token_url)
+        @realm_aliases = realm_aliases
+        @realm_aliases ||= DEFAULT_REALM_ALIASES[@realm]
 
         @open_timeout = (open_timeout ? open_timeout.to_i : 5)
         @read_timeout = (read_timeout ? read_timeout.to_i : 5)
@@ -167,6 +185,19 @@ module Cerner
         Time.now.to_i
       end
 
+      # Public: Determines if the passed realm is equivalent to the configured
+      # realm by comparing it to the #realm and #realm_aliases.
+      #
+      # realm - The String to check for equivalence.
+      #
+      # Returns True if the passed realm is equivalent to the configured realm;
+      #   False otherwise.
+      def realm_eql?(realm)
+        return true if @realm.eql?(realm)
+
+        @realm_aliases.include?(realm)
+      end
+
       private
 
       # Internal: Generate a User-Agent HTTP Header string
@@ -216,18 +247,6 @@ module Cerner
         raise ArgumentError, 'access_token_url must be an HTTP or HTTPS URI' unless uri.is_a?(URI::HTTP)
 
         uri
-      end
-
-      # Internal: Returns a String containing the canonical root url.
-      #
-      # url - A URL to get the canonical root url String from.
-      #
-      # raises ArgumentError if url is nil.
-      def canonical_root_url_for(url)
-        raise ArgumentError, 'url is nil' unless url
-
-        realm = URI("#{url.scheme}://#{url.host}:#{url.port}")
-        realm.to_s
       end
 
       # Internal: Prepare a request for #retrieve
