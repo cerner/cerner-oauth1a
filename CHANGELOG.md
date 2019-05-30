@@ -1,3 +1,5 @@
+# v2.4.0
+
 # v2.3.0
 Added Protection Realm Equivalence feature to Cerner::OAuth1a::AccessTokenAgent,
 which is used by Cerner::OAuth1a::AccessToken#authenticate when comparing realms.
