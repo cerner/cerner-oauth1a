@@ -10,5 +10,6 @@ gem 'bundler-audit'
 gem 'rake', '~> 12.3'
 gem 'rdoc', '~> 6.1'
 gem 'rspec', '~> 3.8'
-gem 'rubocop', '~> 0.63', require: false
-gem 'simplecov', '~> 0.16', require: false
+gem 'rubocop', '~> 0.72', require: false
+gem 'rubocop-performance', '~> 1.4', require: false
+gem 'simplecov', '~> 0.17', require: false

@@ -6,7 +6,6 @@ require 'uri'
 
 module Cerner
   module OAuth1a
-
     # Public: A Cerner OAuth 1.0a Access Token and related request parameters for use in Consumer or
     # Service Provider use cases.
     class AccessToken
@@ -316,26 +315,13 @@ module Cerner
 
         expires_on = convert_to_time(expires_on)
         now = convert_to_time(Time.now)
-        if now.tv_sec >= expires_on.tv_sec
-          raise OAuthError.new(
-            'token has expired',
-            nil,
-            'token_expired',
-            nil,
-            @realm
-          )
-        end
+
+        raise OAuthError.new('token has expired', nil, 'token_expired', nil, @realm) if now.tv_sec >= expires_on.tv_sec
       end
 
       def load_keys(access_token_agent, keys_version)
         unless keys_version
-          raise OAuthError.new(
-            'token missing KeysVersion',
-            nil,
-            'oauth_parameters_rejected',
-            'oauth_token',
-            @realm
-          )
+          raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
         end
 
         begin

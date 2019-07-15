@@ -2,7 +2,6 @@
 
 module Cerner
   module OAuth1a
-
     # Internal: A Railtie that initializer the cache implementation to use Rails.cache.
     # This will be picked up automatically if ::Rails and ::Rails.cache are defined.
     class CacheRailtie < ::Rails::Railtie

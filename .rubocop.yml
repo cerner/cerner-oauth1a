@@ -1,39 +1,49 @@
+require:
+  - rubocop-performance
 AllCops:
   TargetRubyVersion: 2.4
   Exclude:
     - bin/*
     - tmp/**/*
-Layout/EmptyLinesAroundModuleBody:
-  Enabled: false
+
 Metrics/AbcSize:
   Max: 18
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
+
 Metrics/BlockLength:
   Exclude:
     - spec/**/*.rb
+
 Metrics/ClassLength:
   Max: 220
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
+
 Metrics/CyclomaticComplexity:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
     - lib/cerner/oauth1a/access_token_agent.rb
     - lib/cerner/oauth1a/oauth_error.rb
+
 Metrics/LineLength:
   Max: 120
+
 Metrics/MethodLength:
   Max: 30
+
 Metrics/ParameterLists:
   Max: 10
+
 Metrics/PerceivedComplexity:
   Exclude:
     - lib/cerner/oauth1a/access_token.rb
     - lib/cerner/oauth1a/access_token_agent.rb
     - lib/cerner/oauth1a/oauth_error.rb
+
 Style/GuardClause:
-  Exclude:
-    - lib/cerner/oauth1a/access_token.rb
+  MinBodyLength: 2
+
 Style/WordArray:
-  MinSize: 5
+  Exclude:
+    - spec/cerner/oauth1a/oauth_error_spec.rb
