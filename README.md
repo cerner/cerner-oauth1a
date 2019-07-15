@@ -2,7 +2,7 @@
 
 [![Build Status](https://api.travis-ci.com/cerner/cerner-oauth1a.svg)](https://travis-ci.com/cerner/cerner-oauth1a)
 [![Gem Version](http://img.shields.io/gem/v/cerner-oauth1a.svg)](https://rubygems.org/gems/cerner-oauth1a)
-[![Code Climate](http://img.shields.io/codeclimate/github/cerner/cerner-oauth1a.svg)](https://codeclimate.com/github/cerner/cerner-oauth1a)
+[![AwesomeCode Status](https://awesomecode.io/projects/48ece237-ac9c-49c9-859a-3a825968339b/status)](https://awesomecode.io/repos/cerner/cerner-oauth1a)
 
 A minimal dependency library for interacting with a Cerner OAuth 1.0a Access Token Service for
 invoking Cerner OAuth 1.0a protected services or implementing Cerner OAuth 1.0a authentication.
