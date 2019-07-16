@@ -465,12 +465,10 @@ RSpec.describe Cerner::OAuth1a::AccessToken do
     end
 
     context 'returns true' do
-      # rubocop:disable Lint/UselessComparison
       it 'when compared to self' do
         expect(access_token == access_token).to be true
         expect(access_token.eql?(access_token)).to be true
       end
-      # rubocop:enable Lint/UselessComparison
 
       it 'when two instances have the same attributes' do
         access_token2 = Cerner::OAuth1a::AccessToken.new(

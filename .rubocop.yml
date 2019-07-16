@@ -6,6 +6,11 @@ AllCops:
     - bin/*
     - tmp/**/*
 
+Lint/UselessComparison:
+  Exclude:
+    - spec/cerner/oauth1a/access_token_spec.rb
+    - spec/cerner/oauth1a/keys_spec.rb
+
 Metrics/AbcSize:
   Max: 18
   Exclude:
@@ -40,6 +45,10 @@ Metrics/PerceivedComplexity:
     - lib/cerner/oauth1a/access_token.rb
     - lib/cerner/oauth1a/access_token_agent.rb
     - lib/cerner/oauth1a/oauth_error.rb
+
+Naming/MethodName:
+  Exclude:
+    - spec/mock_access_token_server.rb
 
 Style/GuardClause:
   MinBodyLength: 2

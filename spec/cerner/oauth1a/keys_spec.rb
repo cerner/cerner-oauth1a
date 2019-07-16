@@ -39,12 +39,10 @@ RSpec.describe Cerner::OAuth1a::Keys do
     let(:keys) { Cerner::OAuth1a::Keys.new(version: '1', aes_secret_key: '123456', rsa_public_key: '123456') }
 
     context 'returns true' do
-      # rubocop:disable Lint/UselessComparison
       it 'when compared to self' do
         expect(keys == keys).to be true
         expect(keys.eql?(keys)).to be true
       end
-      # rubocop:enable Lint/UselessComparison
 
       it 'when two instances have same attributes' do
         keys2 = Cerner::OAuth1a::Keys.new(version: '1', aes_secret_key: '123456', rsa_public_key: '123456')
