@@ -36,17 +36,18 @@ class MockAccessTokenServer
   def startup
     raise StandardError, 'server has already been started' if @pid
 
-    @pid = fork do
-      trap('TERM') do
-        @http_server.shutdown
-        @pid = nil
+    @pid =
+      fork do
+        trap('TERM') do
+          @http_server.shutdown
+          @pid = nil
+        end
+        trap('INT') do
+          @http_server.shutdown
+          @pid = nil
+        end
+        @http_server.start
       end
-      trap('INT') do
-        @http_server.shutdown
-        @pid = nil
-      end
-      @http_server.start
-    end
   end
 
   def shutdown

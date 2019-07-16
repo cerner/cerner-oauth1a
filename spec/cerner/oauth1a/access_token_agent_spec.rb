@@ -68,7 +68,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       @server = MockAccessTokenServer.new(
         [
           {
-            path: '/oauth/access', response: {
+            path: '/oauth/access',
+            response: {
               status: 200,
               content_type: 'application/x-www-form-urlencoded',
               body: 'oauth_token=TOKEN'\
@@ -79,7 +80,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             }
           },
           {
-            path: '/oauth/access/keys/1', response: {
+            path: '/oauth/access/keys/1',
+            response: {
               status: 200,
               content_type: 'application/json',
               body: JSON.generate(
@@ -93,7 +95,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             }
           },
           {
-            path: '/oauth/access/keys/token_rejected', response: {
+            path: '/oauth/access/keys/token_rejected',
+            response: {
               status: 401,
               content_type: 'text/plain',
               www_authenticate: 'OAuth realm="http://localhost", oauth_problem="token_rejected"',
@@ -101,7 +104,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             }
           },
           {
-            path: '/oauth/access/keys/missing_secret_key', response: {
+            path: '/oauth/access/keys/missing_secret_key',
+            response: {
               status: 200,
               content_type: 'application/json',
               body: JSON.generate(
@@ -112,7 +116,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             }
           },
           {
-            path: '/oauth/access/keys/missing_public_key', response: {
+            path: '/oauth/access/keys/missing_public_key',
+            response: {
               status: 200,
               content_type: 'application/json',
               body: JSON.generate(
@@ -188,7 +193,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
       @server = MockAccessTokenServer.new(
         [
           {
-            path: '/oauth/access_success', response: {
+            path: '/oauth/access_success',
+            response: {
               status: 200,
               content_type: 'application/x-www-form-urlencoded',
               body: 'oauth_token=TOKEN'\
@@ -199,7 +205,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
             }
           },
           {
-            path: '/oauth/access_token_rejected', response: {
+            path: '/oauth/access_token_rejected',
+            response: {
               status: 401,
               content_type: 'text/plain',
               www_authenticate: 'OAuth realm="http://Flocalhost", oauth_problem="token_rejected"',
@@ -246,120 +253,150 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
 
   describe '#initialize' do
     it 'sets the open_timeout and read_timeout using to_i' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET',
-                                                    open_timeout: '10',
-                                                    read_timeout: '15')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET',
+        open_timeout: '10',
+        read_timeout: '15'
+      )
       expect(agent.instance_variable_get(:@open_timeout)).to eq(10)
       expect(agent.instance_variable_get(:@read_timeout)).to eq(15)
     end
 
     it 'sets the open_timeout and read_timeout as default' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
       expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
     end
 
     it 'sets the open_timeout and read_timeout as default when nil' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET',
-                                                    open_timeout: nil,
-                                                    read_timeout: nil)
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET',
+        open_timeout: nil,
+        read_timeout: nil
+      )
       expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
       expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
     end
 
     it 'sets the consumer_key' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.consumer_key).to eq('KEY')
     end
 
     it 'requires a non-nil consumer_key' do
       expect do
-        Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                              consumer_key: nil,
-                                              consumer_secret: 'SECRET')
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'http://localhost',
+          consumer_key: nil,
+          consumer_secret: 'SECRET'
+        )
       end.to raise_error ArgumentError, /consumer_key/
     end
 
     it 'sets the consumer_secret' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.consumer_secret).to eq('SECRET')
     end
 
     it 'requires a non-nil consumer_secret' do
       expect do
-        Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                              consumer_key: 'KEY',
-                                              consumer_secret: nil)
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'http://localhost',
+          consumer_key: 'KEY',
+          consumer_secret: nil
+        )
       end.to raise_error ArgumentError, /consumer_secret/
     end
 
     it 'converts String to URI for access_token_url' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.access_token_url).to eq(URI('http://localhost'))
     end
 
     it 'accepts a URI for access_token_url' do
       fixture = URI('http://localhost')
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: fixture,
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: fixture,
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.access_token_url).to be(fixture)
     end
 
     it 'requires an HTTP URL for access_token_url' do
       expect do
-        Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'ftp://localhost',
-                                              consumer_key: 'KEY',
-                                              consumer_secret: 'SECRET')
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'ftp://localhost',
+          consumer_key: 'KEY',
+          consumer_secret: 'SECRET'
+        )
       end.to raise_error ArgumentError, /access_token_url/
     end
 
     it 'requires a valid URL for access_token_url' do
       expect do
-        Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: '\\not_valid',
-                                              consumer_key: 'KEY',
-                                              consumer_secret: 'SECRET')
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: '\\not_valid',
+          consumer_key: 'KEY',
+          consumer_secret: 'SECRET'
+        )
       end.to raise_error ArgumentError, /access_token_url/
     end
 
     it 'requires a non-nil access_token_url' do
       expect do
-        Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: nil,
-                                              consumer_key: 'KEY',
-                                              consumer_secret: 'SECRET')
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: nil,
+          consumer_key: 'KEY',
+          consumer_secret: 'SECRET'
+        )
       end.to raise_error ArgumentError, /access_token_url/
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with default http port' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost/oauth/access',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost/oauth/access',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.realm).to eq('http://localhost')
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with default https port' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'https://localhost/oauth/access',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'https://localhost/oauth/access',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.realm).to eq('https://localhost')
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with non-default port' do
-      agent = Cerner::OAuth1a::AccessTokenAgent.new(access_token_url: 'http://localhost:8080/oauth/access',
-                                                    consumer_key: 'KEY',
-                                                    consumer_secret: 'SECRET')
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: 'http://localhost:8080/oauth/access',
+        consumer_key: 'KEY',
+        consumer_secret: 'SECRET'
+      )
       expect(agent.realm).to eq('http://localhost:8080')
     end
   end

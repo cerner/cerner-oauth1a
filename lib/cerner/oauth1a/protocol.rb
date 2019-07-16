@@ -78,11 +78,12 @@ module Cerner
         realm = "realm=\"#{params.delete(:realm)}\"" if params[:realm]
         realm += ', ' if realm && !params.empty?
 
-        encoded_params = params.map do |k, v|
-          k = URI.encode_www_form_component(k).gsub('+', '%20')
-          v = URI.encode_www_form_component(v).gsub('+', '%20')
-          "#{k}=\"#{v}\""
-        end
+        encoded_params =
+          params.map do |k, v|
+            k = URI.encode_www_form_component(k).gsub('+', '%20')
+            v = URI.encode_www_form_component(v).gsub('+', '%20')
+            "#{k}=\"#{v}\""
+          end
 
         "OAuth #{realm}#{encoded_params.join(',')}"
       end
@@ -100,8 +101,12 @@ module Cerner
       # The values come from http://wiki.oauth.net/w/page/12238543/ProblemReporting
       # and are mapped based on https://oauth.net/core/1.0/#rfc.section.10.
       BAD_REQUEST_PROBLEMS = %w[
-        additional_authorization_required parameter_absent parameter_rejected
-        signature_method_rejected timestamp_refused verifier_invalid
+        additional_authorization_required
+        parameter_absent
+        parameter_rejected
+        signature_method_rejected
+        timestamp_refused
+        verifier_invalid
         version_rejected
       ].freeze
 
@@ -109,9 +114,18 @@ module Cerner
       # The values come from http://wiki.oauth.net/w/page/12238543/ProblemReporting
       # and are mapped based on https://oauth.net/core/1.0/#rfc.section.10.
       UNAUTHORIZED_PROBLEMS = %w[
-        consumer_key_refused consumer_key_rejected consumer_key_unknown
-        nonce_used permission_denied permission_unknown signature_invalid
-        token_expired token_rejected token_revoked token_used user_refused
+        consumer_key_refused
+        consumer_key_rejected
+        consumer_key_unknown
+        nonce_used
+        permission_denied
+        permission_unknown
+        signature_invalid
+        token_expired
+        token_rejected
+        token_revoked
+        token_used
+        user_refused
       ].freeze
 
       # Public: Converts a oauth_problem value to an HTTP Status using the
