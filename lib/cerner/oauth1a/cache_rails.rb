@@ -6,7 +6,7 @@ module Cerner
     # This will be picked up automatically if ::Rails and ::Rails.cache are defined.
     class CacheRailtie < ::Rails::Railtie
       initializer 'cerner-oauth1a.cache_initialization' do |_app|
-        ::Rails.logger.info "#{CacheRailtie.name}: configuring cache to use Rails.cache"
+        ::Rails.logger.info("#{CacheRailtie.name}: configuring cache to use Rails.cache")
         Cerner::OAuth1a::Cache.instance = RailsCache.new(::Rails.cache)
       end
     end

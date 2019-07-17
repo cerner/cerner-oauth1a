@@ -290,7 +290,7 @@ module Cerner
       def convert_to_time(time)
         raise ArgumentError, 'time is nil' unless time
 
-        if time.is_a? Time
+        if time.is_a?(Time)
           time.utc
         else
           Time.at(time.to_i).utc

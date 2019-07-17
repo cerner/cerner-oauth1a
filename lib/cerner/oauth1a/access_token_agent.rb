@@ -233,7 +233,7 @@ module Cerner
       def convert_to_http_uri(access_token_url)
         raise ArgumentError, 'access_token_url is nil' unless access_token_url
 
-        if access_token_url.is_a? URI
+        if access_token_url.is_a?(URI)
           uri = access_token_url
         else
           begin

@@ -83,6 +83,10 @@ Naming/MethodName:
 Style/GuardClause:
   MinBodyLength: 2
 
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+  IgnoredMethods: require, raise, puts, source, gem
+
 Style/WordArray:
   Exclude:
     - spec/cerner/oauth1a/oauth_error_spec.rb

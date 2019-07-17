@@ -9,7 +9,7 @@ require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/oauth_error'
 require 'json'
 
-RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
+RSpec.describe(Cerner::OAuth1a::AccessTokenAgent) do
   describe '#realm_eql?' do
     context 'initalized realm_aliases to empty' do
       it 'returns true' do
@@ -19,7 +19,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_secret: 'CONSUMER SECRET',
           realm_aliases: []
         )
-        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to(be(true))
       end
 
       it 'returns false' do
@@ -29,7 +29,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_secret: 'CONSUMER SECRET',
           realm_aliases: []
         )
-        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be false
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to(be(false))
       end
     end
 
@@ -40,7 +40,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'CONSUMER KEY',
           consumer_secret: 'CONSUMER SECRET'
         )
-        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to(be(true))
       end
 
       it 'returns true when an alias' do
@@ -49,7 +49,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'CONSUMER KEY',
           consumer_secret: 'CONSUMER SECRET'
         )
-        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to be true
+        expect(agent.realm_eql?('https://oauth-api.cerner.com')).to(be(true))
       end
 
       it 'returns false' do
@@ -58,7 +58,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'CONSUMER KEY',
           consumer_secret: 'CONSUMER SECRET'
         )
-        expect(agent.realm_eql?('https://not-equal')).to be false
+        expect(agent.realm_eql?('https://not-equal')).to(be(false))
       end
     end
   end
@@ -143,9 +143,9 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_secret: 'CONSUMER SECRET'
       )
       keys = agent.retrieve_keys('1')
-      expect(keys.version).to eq('1')
-      expect(keys.aes_secret_key).to eq('123456')
-      expect(keys.rsa_public_key).to eq('789012')
+      expect(keys.version).to(eq('1'))
+      expect(keys.aes_secret_key).to(eq('123456'))
+      expect(keys.rsa_public_key).to(eq('789012'))
     end
 
     it 'throw OAuthError with token_rejected oauth_problem' do
@@ -154,11 +154,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'CONSUMER KEY',
         consumer_secret: 'CONSUMER SECRET'
       )
-      expect { agent.retrieve_keys('token_rejected') }.to raise_error do |error|
-        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
-        expect(error.message).to include 'token_rejected'
-        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
-      end
+      expect { agent.retrieve_keys('token_rejected') }.to(raise_error do |error|
+        expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
+        expect(error.message).to(include('token_rejected'))
+        expect(error.to_http_www_authenticate_header).to(include("realm=\"#{@server.base_uri}\""))
+      end)
     end
 
     it 'throws OAuthError when the response is missing the secret key' do
@@ -167,11 +167,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'CONSUMER KEY',
         consumer_secret: 'CONSUMER SECRET'
       )
-      expect { agent.retrieve_keys('missing_secret_key') }.to raise_error do |error|
-        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
-        expect(error.message).to include 'AES secret key'
-        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
-      end
+      expect { agent.retrieve_keys('missing_secret_key') }.to(raise_error do |error|
+        expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
+        expect(error.message).to(include('AES secret key'))
+        expect(error.to_http_www_authenticate_header).to(include("realm=\"#{@server.base_uri}\""))
+      end)
     end
 
     it 'throws OAuthError when the response is missing the public key' do
@@ -180,11 +180,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'CONSUMER KEY',
         consumer_secret: 'CONSUMER SECRET'
       )
-      expect { agent.retrieve_keys('missing_public_key') }.to raise_error do |error|
-        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
-        expect(error.message).to include 'RSA public key'
-        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
-      end
+      expect { agent.retrieve_keys('missing_public_key') }.to(raise_error do |error|
+        expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
+        expect(error.message).to(include('RSA public key'))
+        expect(error.to_http_www_authenticate_header).to(include("realm=\"#{@server.base_uri}\""))
+      end)
     end
   end
 
@@ -230,10 +230,10 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         cache_access_tokens: false
       )
       access_token = agent.retrieve
-      expect(access_token.consumer_key).to eq 'CONSUMER KEY'
-      expect(access_token.token).to eq 'TOKEN'
-      expect(access_token.token_secret).to eq 'TOKEN SECRET'
-      expect(access_token.realm).to eq @server.base_uri
+      expect(access_token.consumer_key).to(eq 'CONSUMER KEY')
+      expect(access_token.token).to(eq 'TOKEN')
+      expect(access_token.token_secret).to(eq 'TOKEN SECRET')
+      expect(access_token.realm).to(eq @server.base_uri)
     end
 
     it 'throw OAuthError with token_rejected oauth_problem' do
@@ -243,11 +243,11 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_secret: 'CONSUMER SECRET',
         cache_access_tokens: false
       )
-      expect { agent.retrieve }.to raise_error do |error|
-        expect(error).to be_a(Cerner::OAuth1a::OAuthError)
-        expect(error.message).to include 'token_rejected'
-        expect(error.to_http_www_authenticate_header).to include "realm=\"#{@server.base_uri}\""
-      end
+      expect { agent.retrieve }.to(raise_error do |error|
+        expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
+        expect(error.message).to(include('token_rejected'))
+        expect(error.to_http_www_authenticate_header).to(include("realm=\"#{@server.base_uri}\""))
+      end)
     end
   end
 
@@ -260,8 +260,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         open_timeout: '10',
         read_timeout: '15'
       )
-      expect(agent.instance_variable_get(:@open_timeout)).to eq(10)
-      expect(agent.instance_variable_get(:@read_timeout)).to eq(15)
+      expect(agent.instance_variable_get(:@open_timeout)).to(eq(10))
+      expect(agent.instance_variable_get(:@read_timeout)).to(eq(15))
     end
 
     it 'sets the open_timeout and read_timeout as default' do
@@ -270,8 +270,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
-      expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
+      expect(agent.instance_variable_get(:@open_timeout)).to(eq(5))
+      expect(agent.instance_variable_get(:@read_timeout)).to(eq(5))
     end
 
     it 'sets the open_timeout and read_timeout as default when nil' do
@@ -282,8 +282,8 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         open_timeout: nil,
         read_timeout: nil
       )
-      expect(agent.instance_variable_get(:@open_timeout)).to eq(5)
-      expect(agent.instance_variable_get(:@read_timeout)).to eq(5)
+      expect(agent.instance_variable_get(:@open_timeout)).to(eq(5))
+      expect(agent.instance_variable_get(:@read_timeout)).to(eq(5))
     end
 
     it 'sets the consumer_key' do
@@ -292,7 +292,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.consumer_key).to eq('KEY')
+      expect(agent.consumer_key).to(eq('KEY'))
     end
 
     it 'requires a non-nil consumer_key' do
@@ -302,7 +302,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: nil,
           consumer_secret: 'SECRET'
         )
-      end.to raise_error ArgumentError, /consumer_key/
+      end.to(raise_error(ArgumentError, /consumer_key/))
     end
 
     it 'sets the consumer_secret' do
@@ -311,7 +311,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.consumer_secret).to eq('SECRET')
+      expect(agent.consumer_secret).to(eq('SECRET'))
     end
 
     it 'requires a non-nil consumer_secret' do
@@ -321,7 +321,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'KEY',
           consumer_secret: nil
         )
-      end.to raise_error ArgumentError, /consumer_secret/
+      end.to(raise_error(ArgumentError, /consumer_secret/))
     end
 
     it 'converts String to URI for access_token_url' do
@@ -330,7 +330,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.access_token_url).to eq(URI('http://localhost'))
+      expect(agent.access_token_url).to(eq(URI('http://localhost')))
     end
 
     it 'accepts a URI for access_token_url' do
@@ -340,7 +340,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.access_token_url).to be(fixture)
+      expect(agent.access_token_url).to(be(fixture))
     end
 
     it 'requires an HTTP URL for access_token_url' do
@@ -350,7 +350,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'KEY',
           consumer_secret: 'SECRET'
         )
-      end.to raise_error ArgumentError, /access_token_url/
+      end.to(raise_error(ArgumentError, /access_token_url/))
     end
 
     it 'requires a valid URL for access_token_url' do
@@ -360,7 +360,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'KEY',
           consumer_secret: 'SECRET'
         )
-      end.to raise_error ArgumentError, /access_token_url/
+      end.to(raise_error(ArgumentError, /access_token_url/))
     end
 
     it 'requires a non-nil access_token_url' do
@@ -370,7 +370,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
           consumer_key: 'KEY',
           consumer_secret: 'SECRET'
         )
-      end.to raise_error ArgumentError, /access_token_url/
+      end.to(raise_error(ArgumentError, /access_token_url/))
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with default http port' do
@@ -379,7 +379,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.realm).to eq('http://localhost')
+      expect(agent.realm).to(eq('http://localhost'))
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with default https port' do
@@ -388,7 +388,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.realm).to eq('https://localhost')
+      expect(agent.realm).to(eq('https://localhost'))
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with non-default port' do
@@ -397,7 +397,7 @@ RSpec.describe Cerner::OAuth1a::AccessTokenAgent do
         consumer_key: 'KEY',
         consumer_secret: 'SECRET'
       )
-      expect(agent.realm).to eq('http://localhost:8080')
+      expect(agent.realm).to(eq('http://localhost:8080'))
     end
   end
 end
