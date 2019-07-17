@@ -169,7 +169,7 @@ RSpec.describe(Cerner::OAuth1a::Keys) do
       ciphertext = cipher.update('secret message') + cipher.final
       keys = Cerner::OAuth1a::Keys.new(version: '1', aes_secret_key: key, rsa_public_key: '123456')
       ciphertext = iv + ciphertext
-      expect(keys.decrypt_hmac_secrets(Base64.urlsafe_encode64(ciphertext))).to(eq 'secret message')
+      expect(keys.decrypt_hmac_secrets(Base64.urlsafe_encode64(ciphertext))).to(eq('secret message'))
     end
   end
 end

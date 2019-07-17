@@ -230,10 +230,10 @@ RSpec.describe(Cerner::OAuth1a::AccessTokenAgent) do
         cache_access_tokens: false
       )
       access_token = agent.retrieve
-      expect(access_token.consumer_key).to(eq 'CONSUMER KEY')
-      expect(access_token.token).to(eq 'TOKEN')
-      expect(access_token.token_secret).to(eq 'TOKEN SECRET')
-      expect(access_token.realm).to(eq @server.base_uri)
+      expect(access_token.consumer_key).to(eq('CONSUMER KEY'))
+      expect(access_token.token).to(eq('TOKEN'))
+      expect(access_token.token_secret).to(eq('TOKEN SECRET'))
+      expect(access_token.realm).to(eq(@server.base_uri))
     end
 
     it 'throw OAuthError with token_rejected oauth_problem' do

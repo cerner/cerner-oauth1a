@@ -785,7 +785,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         token: 'TOKEN',
         signature_method: nil
       )
-      expect(access_token.signature_method).to(eq 'PLAINTEXT')
+      expect(access_token.signature_method).to(eq('PLAINTEXT'))
     end
 
     it 'converts Integer to Time for expires_at' do
