@@ -40,21 +40,6 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         )
       end
 
-      it 'when oauth_timestamp is missing' do
-        expect do
-          Cerner::OAuth1a::AccessToken.from_authorization_header(
-            'OAuth oauth_version="1.0", ' \
-            'oauth_consumer_key="consumer key", ' \
-            'oauth_nonce="nonce", ' \
-            'oauth_token="token", ' \
-            'oauth_signature_method="PLAINTEXT", ' \
-            'oauth_signature="signature"'
-          )
-        end.to(
-          raise_error(Cerner::OAuth1a::OAuthError, /timestamp/)
-        )
-      end
-
       it 'when oauth_token is missing' do
         expect do
           Cerner::OAuth1a::AccessToken.from_authorization_header(
@@ -703,6 +688,24 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       expect(access_token.authorization_header).to(match(/oauth_timestamp="\d+"/))
     end
 
+    it 'contains populated parts' do
+      at = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: 'ACCESSOR SECRET',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: expires_at,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET'
+      )
+      expect(at.authorization_header).to(include('oauth_version="1.0"'))
+      expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
+      expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"'))
+      expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
+      expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
+      expect(at.authorization_header).not_to(include('oauth_nonce'))
+      expect(at.authorization_header).not_to(include('oauth_timestamp'))
+      expect(at.authorization_header).not_to(include('realm'))
+    end
+
     it 'does not calculate signature' do
       at = Cerner::OAuth1a::AccessToken.new(
         consumer_key: 'CONSUMER KEY',
@@ -828,34 +831,6 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           token_secret: 'TOKEN SECRET'
         )
       end.to(raise_error(ArgumentError, /consumer_key/))
-    end
-
-    it 'requires a non-nil nonce' do
-      expect do
-        Cerner::OAuth1a::AccessToken.new(
-          accessor_secret: 'ACCESSOR SECRET',
-          consumer_key: 'CONSUMER KEY',
-          expires_at: Time.now.utc,
-          nonce: nil,
-          timestamp: Time.now.utc,
-          token: 'TOKEN',
-          token_secret: 'TOKEN SECRET'
-        )
-      end.to(raise_error(ArgumentError, /nonce/))
-    end
-
-    it 'requires a non-nil timestamp' do
-      expect do
-        Cerner::OAuth1a::AccessToken.new(
-          accessor_secret: 'ACCESSOR SECRET',
-          consumer_key: 'CONSUMER KEY',
-          expires_at: Time.now.utc,
-          nonce: 'NONCE',
-          timestamp: nil,
-          token: 'TOKEN',
-          token_secret: 'TOKEN SECRET'
-        )
-      end.to(raise_error(ArgumentError, /timestamp/))
     end
 
     it 'requires a non-nil token' do
