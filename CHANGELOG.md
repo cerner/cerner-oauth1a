@@ -1,4 +1,8 @@
 # v2.4.0
+Handle nonce and timestamp as optional fields Per
+https://tools.ietf.org/html/rfc5849#section-3.1, the oauth_timestamp and oauth_nonce
+fields may be omitted when PLAINTEXT signatures are used. This commit make the APIs
+related to those two fields treat the data as optional.
 
 # v2.3.0
 Added Protection Realm Equivalence feature to Cerner::OAuth1a::AccessTokenAgent,

@@ -28,10 +28,6 @@ module Cerner
         missing_params = []
         consumer_key = params[:oauth_consumer_key]
         missing_params << :oauth_consumer_key if consumer_key.nil? || consumer_key.empty?
-        nonce = params[:oauth_nonce]
-        missing_params << :oauth_nonce if nonce.nil? || nonce.empty?
-        timestamp = params[:oauth_timestamp]
-        missing_params << :oauth_timestamp if timestamp.nil? || timestamp.empty?
         token = params[:oauth_token]
         missing_params << :oauth_token if token.nil? || token.empty?
         signature_method = params[:oauth_signature_method]
@@ -43,8 +39,8 @@ module Cerner
 
         AccessToken.new(
           consumer_key: consumer_key,
-          nonce: nonce,
-          timestamp: timestamp,
+          nonce: params[:oauth_nonce],
+          timestamp: params[:oauth_timestamp],
           token: token,
           signature_method: signature_method,
           signature: signature,
@@ -58,9 +54,9 @@ module Cerner
       attr_reader :consumer_key
       # Returns a Time, but may be nil, which represents the moment when this token expires.
       attr_reader :expires_at
-      # Returns a String with the Nonce (oauth_nonce) related to this token.
+      # Returns a String, but may be nil, with the Nonce (oauth_nonce) related to this token.
       attr_reader :nonce
-      # Returns a Time, which represents the moment when this token was created (oauth_timestamp).
+      # Returns a Time, but may be nil, which represents the moment when this token was created (oauth_timestamp).
       attr_reader :timestamp
       # Returns a String with the Token (oauth_token).
       attr_reader :token
@@ -85,8 +81,8 @@ module Cerner
       #             :expires_at       - An optional Time representing the expiration moment or any
       #                                 object responding to to_i that represents the expiration
       #                                 moment as the number of seconds since the epoch.
-      #             :nonce            - The required String representing the nonce.
-      #             :timestamp        - A required Time representing the creation moment or any
+      #             :nonce            - The optional String representing the nonce.
+      #             :timestamp        - A optional Time representing the creation moment or any
       #                                 object responding to to_i that represents the creation
       #                                 moment as the number of seconds since the epoch.
       #             :token            - The required String representing the token.
@@ -94,26 +90,22 @@ module Cerner
       #             :signature_method - The optional String representing the signature method.
       #                                 Defaults to PLAINTEXT.
       #             :signature        - The optional String representing the signature.
-      #                                 Defaults to nil.
       #             :realm            - The optional String representing the protection realm.
-      #                                 Defaults to nil.
       #
-      # Raises ArgumentError if consumer_key, nonce, timestamp, token or signature_method is nil.
+      # Raises ArgumentError if consumer_key or token is nil.
       def initialize(
         accessor_secret: nil,
         consumer_key:,
         expires_at: nil,
-        nonce:,
+        nonce: nil,
         signature: nil,
         signature_method: 'PLAINTEXT',
-        timestamp:,
+        timestamp: nil,
         token:,
         token_secret: nil,
         realm: nil
       )
         raise ArgumentError, 'consumer_key is nil' unless consumer_key
-        raise ArgumentError, 'nonce is nil' unless nonce
-        raise ArgumentError, 'timestamp is nil' unless timestamp
         raise ArgumentError, 'token is nil' unless token
 
         @accessor_secret = accessor_secret || nil
@@ -124,7 +116,7 @@ module Cerner
         @nonce = nonce
         @signature = signature
         @signature_method = signature_method || 'PLAINTEXT'
-        @timestamp = convert_to_time(timestamp)
+        @timestamp = timestamp ? convert_to_time(timestamp) : nil
         @token = token
         @token_secret = token_secret || nil
         @realm = realm || nil
@@ -153,16 +145,16 @@ module Cerner
           raise OAuthError.new('accessor_secret or token_secret is nil', nil, 'parameter_absent', nil, @realm)
         end
 
-        tuples = {
-          realm: @realm,
-          oauth_version: '1.0',
-          oauth_signature_method: @signature_method,
-          oauth_signature: sig,
-          oauth_consumer_key: @consumer_key,
-          oauth_nonce: @nonce,
-          oauth_timestamp: @timestamp.tv_sec,
-          oauth_token: @token
-        }
+        tuples = {}
+        tuples[:realm] = @realm if @realm
+        tuples[:oauth_version] = '1.0'
+        tuples[:oauth_signature_method] = @signature_method
+        tuples[:oauth_signature] = sig
+        tuples[:oauth_consumer_key] = @consumer_key
+        tuples[:oauth_nonce] = @nonce if @nonce
+        tuples[:oauth_timestamp] = @timestamp.tv_sec if @timestamp
+        tuples[:oauth_token] = @token
+
         @authorization_header = Protocol.generate_authorization_header(tuples)
       end
 
