@@ -7,9 +7,9 @@ gemspec
 # Keep development dependencies here, instead of gemspec, since we don't package
 # Rakefile, specs, etc in the packaged gem.
 gem 'bundler-audit'
-gem 'rake', '~> 12.3'
-gem 'rdoc', '~> 6.1'
-gem 'rspec', '~> 3.8'
-gem 'rubocop', '~> 0.72', require: false
-gem 'rubocop-performance', '~> 1.4', require: false
+gem 'rake', '~> 13.0'
+gem 'rdoc', '~> 6.2'
+gem 'rspec', '~> 3.9'
+gem 'rubocop', '~> 0.77', require: false
+gem 'rubocop-performance', '~> 1.5', require: false
 gem 'simplecov', '~> 0.17', require: false
