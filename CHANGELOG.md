@@ -1,3 +1,6 @@
+# v2.5.0
+Added a Cerner::OAuth1a::Protocol.percent_encode method.
+
 # v2.4.0
 Handle nonce and timestamp as optional fields Per
 https://tools.ietf.org/html/rfc5849#section-3.1, the oauth_timestamp and oauth_nonce

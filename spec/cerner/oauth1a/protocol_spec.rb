@@ -5,6 +5,16 @@ require 'spec_helper'
 require 'cerner/oauth1a/protocol'
 
 RSpec.describe(Cerner::OAuth1a::Protocol) do
+  describe '.percent_encode' do
+    it 'returns the same value' do
+      expect(Cerner::OAuth1a::Protocol.percent_encode('nothing')).to(eq('nothing'))
+    end
+
+    it 'encodes spaces with %20' do
+      expect(Cerner::OAuth1a::Protocol.percent_encode('something here')).to(eq('something%20here'))
+    end
+  end
+
   describe '.realm_for' do
     it 'raises ArgumentError with nil input' do
       expect { Cerner::OAuth1a::Protocol.realm_for(nil) }.to(raise_error(ArgumentError))
@@ -102,7 +112,7 @@ RSpec.describe(Cerner::OAuth1a::Protocol) do
         it 'when params has the realm entry and another entry' do
           expect(
             Cerner::OAuth1a::Protocol.generate_authorization_header(key: 'value', realm: 'http://example.com')
-          ).to(eq('OAuth realm="http://example.com", key="value"'))
+          ).to(eq('OAuth realm="http://example.com",key="value"'))
         end
       end
     end

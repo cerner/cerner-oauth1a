@@ -6,6 +6,18 @@ module Cerner
   module OAuth1a
     # Public: OAuth 1.0a protocol utilities.
     module Protocol
+      # Public: Encodes the passed text using the percent encoding variant described in the OAuth
+      # 1.0a specification.
+      #
+      # Reference: https://tools.ietf.org/html/rfc5849#section-3.6
+      #
+      # text - A String containing the text to encode.
+      #
+      # Returns a String that has been encoded.
+      def self.percent_encode(text)
+        URI.encode_www_form_component(text).gsub('+', '%20')
+      end
+
       # Public: Parses a URL-encoded query string into a Hash with symbolized keys.
       #
       # query - String containing a URL-encoded query string to parse.
@@ -76,14 +88,9 @@ module Cerner
         return nil unless params && !params.empty?
 
         realm = "realm=\"#{params.delete(:realm)}\"" if params[:realm]
-        realm += ', ' if realm && !params.empty?
+        realm += ',' if realm && !params.empty?
 
-        encoded_params =
-          params.map do |k, v|
-            k = URI.encode_www_form_component(k).gsub('+', '%20')
-            v = URI.encode_www_form_component(v).gsub('+', '%20')
-            "#{k}=\"#{v}\""
-          end
+        encoded_params = params.map { |k, v| "#{percent_encode(k)}=\"#{percent_encode(v)}\"" }
 
         "OAuth #{realm}#{encoded_params.join(',')}"
       end
