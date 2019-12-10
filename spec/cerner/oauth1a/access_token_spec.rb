@@ -642,24 +642,6 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         end)
       end
 
-      it 'when signature is calculated and accessor_secret is nil' do
-        at = Cerner::OAuth1a::AccessToken.new(
-          accessor_secret: nil,
-          consumer_key: 'CONSUMER KEY',
-          expires_at: expires_at,
-          nonce: 'NONCE',
-          timestamp: current_time,
-          token: 'TOKEN',
-          token_secret: 'TOKEN SECRET',
-          realm: 'REALM'
-        )
-        expect { at.authorization_header }.to(raise_error do |error|
-          expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
-          expect(error.message).to(include('parameter_absent'))
-          expect(error.realm).to(eq('REALM'))
-        end)
-      end
-
       it 'when signature is calculated and token_secret is nil' do
         at = Cerner::OAuth1a::AccessToken.new(
           accessor_secret: 'ACCESSOR SECRET',
@@ -681,7 +663,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     it 'contains oauth_ parts' do
       expect(access_token.authorization_header).to(include('oauth_version="1.0"'))
       expect(access_token.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
-      expect(access_token.authorization_header).to(include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"'))
+      expect(access_token.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
       expect(access_token.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
       expect(access_token.authorization_header).to(include('oauth_nonce="NONCE"'))
       expect(access_token.authorization_header).to(include('oauth_token="TOKEN"'))
@@ -698,7 +680,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       )
       expect(at.authorization_header).to(include('oauth_version="1.0"'))
       expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
-      expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"'))
+      expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
       expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
       expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
       expect(at.authorization_header).not_to(include('oauth_nonce'))

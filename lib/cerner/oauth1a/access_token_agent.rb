@@ -5,6 +5,7 @@ require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/keys'
 require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/cache'
+require 'cerner/oauth1a/internal'
 require 'cerner/oauth1a/protocol'
 require 'cerner/oauth1a/version'
 require 'json'
@@ -89,7 +90,7 @@ module Cerner
         @consumer_key = consumer_key
         @consumer_secret = consumer_secret
 
-        @access_token_url = convert_to_http_uri(access_token_url)
+        @access_token_url = Internal.convert_to_http_uri(url: access_token_url, name: 'access_token_url')
         @realm = Protocol.realm_for(@access_token_url)
         @realm_aliases = realm_aliases
         @realm_aliases ||= DEFAULT_REALM_ALIASES[@realm]
@@ -222,31 +223,6 @@ module Cerner
         http.read_timeout = @read_timeout
 
         http
-      end
-
-      # Internal: Convert an Access Token URL into a URI with some verification checks
-      #
-      # access_token_url - A String URL or a URI instance
-      # Returns a URI::HTTP or URI::HTTPS
-      #
-      # Raises ArgumentError if access_token_url is nil, invalid or not an HTTP/HTTPS URI
-      def convert_to_http_uri(access_token_url)
-        raise ArgumentError, 'access_token_url is nil' unless access_token_url
-
-        if access_token_url.is_a?(URI)
-          uri = access_token_url
-        else
-          begin
-            uri = URI(access_token_url)
-          rescue URI::InvalidURIError
-            # raise argument error with cause
-            raise ArgumentError, 'access_token_url is invalid'
-          end
-        end
-
-        raise ArgumentError, 'access_token_url must be an HTTP or HTTPS URI' unless uri.is_a?(URI::HTTP)
-
-        uri
       end
 
       # Internal: Prepare a request for #retrieve

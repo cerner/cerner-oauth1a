@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
+require 'cerner/oauth1a/internal'
 require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/protocol'
+require 'cerner/oauth1a/signature'
 require 'uri'
 
 module Cerner
@@ -130,32 +132,62 @@ module Cerner
       #
       # Raises Cerner::OAuth1a::OAuthError if #signature_method is not PLAINTEXT or if a signature
       # can't be determined.
-      def authorization_header
-        return @authorization_header if @authorization_header
-
-        unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
-        end
+      def authorization_header(http_method: nil, fully_qualified_url: nil, request_params: nil)
+        oauth_params = {}
+        oauth_params[:oauth_version] = '1.0'
+        oauth_params[:oauth_signature_method] = @signature_method
+        oauth_params[:oauth_consumer_key] = @consumer_key
+        oauth_params[:oauth_nonce] = @nonce if @nonce
+        oauth_params[:oauth_timestamp] = @timestamp.tv_sec if @timestamp
+        oauth_params[:oauth_token] = @token
 
         if @signature
           sig = @signature
-        elsif @accessor_secret && @token_secret
-          sig = "#{@accessor_secret}&#{@token_secret}"
         else
-          raise OAuthError.new('accessor_secret or token_secret is nil', nil, 'parameter_absent', nil, @realm)
+          # NOTE: @accessor_secret is always used, but an empty value is allowed and project assumes
+          # that nil implies an empty value
+          unless @token_secret
+            raise OAuthError.new('token_secret is nil', nil, 'parameter_absent', nil, @realm)
+          end
+
+          if @signature_method == 'PLAINTEXT'
+            sig = Signature.sign_via_plaintext(
+              client_shared_secret: @accessor_secret,
+              token_shared_secret: @token_secret
+            )
+          elsif @signature_method == 'HMAC-SHA1'
+            http_method ||= 'GET' # default to HTTP GET
+            request_params ||= {} # default to no request params
+
+            begin
+              fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
+            rescue ArgumentError => ae
+              raise OAuthError.new(ae.message, nil, 'parameter_absent', nil, @realm)
+            end
+
+            query_params = Protocol.parse_url_query_string(fully_qualified_url.query)
+            request_params = query_params.merge(request_params)
+
+            params = request_params.merge(oauth_params)
+            signature_base_string = Signature.build_signature_base_string(
+              http_method: http_method,
+              fully_qualified_url: fully_qualified_url,
+              params: params
+            )
+            sig = Signature.sign_via_hmacsha1(
+              client_shared_secret: @accessor_secret,
+              token_shared_secret: @token_secret,
+              signature_base_string: signature_base_string
+            )
+          else
+            raise OAuthError.new('signature_method is invalid', nil, 'signature_method_rejected', nil, @realm)
+          end
         end
 
-        tuples = {}
-        tuples[:realm] = @realm if @realm
-        tuples[:oauth_version] = '1.0'
-        tuples[:oauth_signature_method] = @signature_method
-        tuples[:oauth_signature] = sig
-        tuples[:oauth_consumer_key] = @consumer_key
-        tuples[:oauth_nonce] = @nonce if @nonce
-        tuples[:oauth_timestamp] = @timestamp.tv_sec if @timestamp
-        tuples[:oauth_token] = @token
+        oauth_params[:realm] = @realm if @realm
+        oauth_params[:oauth_signature] = sig
 
-        @authorization_header = Protocol.generate_authorization_header(tuples)
+        Protocol.generate_authorization_header(oauth_params)
       end
 
       # Public: Authenticates the #token against the #consumer_key, #signature and side-channel
@@ -368,6 +400,8 @@ module Cerner
         end
 
         secrets_parts = Protocol.parse_url_query_string(secrets)
+
+        # if @signature_method == 'PLAINTEXT'
         expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
 
         unless @signature == expected_signature
