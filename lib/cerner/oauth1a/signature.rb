@@ -14,8 +14,8 @@ module Cerner
       #            :client_shared_secret - Either the Accessor Secret or the Consumer Secret.
       #            :token_shared_secret  - The Token Secret.
       def self.sign_via_plaintext(client_shared_secret:, token_shared_secret:)
-        client_shared_secret = Cerner::OAuth1a::Protocol.percent_encode(client_shared_secret)
-        token_shared_secret = Cerner::OAuth1a::Protocol.percent_encode(token_shared_secret)
+        client_shared_secret = Protocol.percent_encode(client_shared_secret)
+        token_shared_secret = Protocol.percent_encode(token_shared_secret)
         "#{client_shared_secret}&#{token_shared_secret}"
       end
 
@@ -25,8 +25,8 @@ module Cerner
       #            :token_shared_secret   - The Token Secret.
       #            :signature_base_string - The Signature Base String to sign.
       def self.sign_via_hmacsha1(client_shared_secret:, token_shared_secret:, signature_base_string:)
-        client_shared_secret = Cerner::OAuth1a::Protocol.percent_encode(client_shared_secret)
-        token_shared_secret = Cerner::OAuth1a::Protocol.percent_encode(token_shared_secret)
+        client_shared_secret = Protocol.percent_encode(client_shared_secret)
+        token_shared_secret = Protocol.percent_encode(token_shared_secret)
         signature_key = "#{client_shared_secret}&#{token_shared_secret}"
         signature = OpenSSL::HMAC.digest('sha1', signature_key, signature_base_string)
         encoded_signature = Base64.encode64(signature)
@@ -37,26 +37,26 @@ module Cerner
 
       def self.normalize_http_method(http_method)
         # accepts Symbol or String
-        Cerner::OAuth1a::Protocol.percent_encode(http_method.to_s.upcase)
+        Protocol.percent_encode(http_method.to_s.upcase)
       end
 
       def self.normalize_base_string_uri(fully_qualified_url)
         u = fully_qualified_url.is_a?(URI) ? fully_qualified_url : URI(fully_qualified_url)
 
-        Cerner::OAuth1a::Protocol.percent_encode(URI("#{u.scheme}://#{u.host}:#{u.port}#{u.path}").to_s)
+        Protocol.percent_encode(URI("#{u.scheme}://#{u.host}:#{u.port}#{u.path}").to_s)
       end
 
       # Reference: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
       def self.normalize_parameters(params)
         encoded_params =
           params.map do |name, value|
-            result = [Cerner::OAuth1a::Protocol.percent_encode(name.to_s), nil]
+            result = [Protocol.percent_encode(name.to_s), nil]
             result[1] =
               if value.is_a?(Array)
-                value = value.map { |e| Cerner::OAuth1a::Protocol.percent_encode(e.to_s) }
+                value = value.map { |e| Protocol.percent_encode(e.to_s) }
                 value.sort
               else
-                Cerner::OAuth1a::Protocol.percent_encode(value.to_s)
+                Protocol.percent_encode(value.to_s)
               end
             result
           end
@@ -76,7 +76,7 @@ module Cerner
         exploded_params.flatten!
 
         joined_params = exploded_params.join('&')
-        Cerner::OAuth1a::Protocol.percent_encode(joined_params)
+        Protocol.percent_encode(joined_params)
       end
 
       def self.build_signature_base_string(http_method:, fully_qualified_url:, params:)
