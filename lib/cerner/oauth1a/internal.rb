@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'securerandom'
 require 'uri'
 
 module Cerner
@@ -32,6 +33,20 @@ module Cerner
         raise ArgumentError, "#{name} must be an HTTP or HTTPS URI" unless uri.is_a?(URI::HTTP)
 
         uri
+      end
+
+      # Public: Generate a Nonce for invocations of the Access Token service.
+      #
+      # Returns a String containing the nonce.
+      def self.generate_nonce
+        SecureRandom.hex
+      end
+
+      # Public: Generate a Timestamp for invocations of the Access Token service.
+      #
+      # Returns an Integer representing the number of seconds since the epoch.
+      def self.generate_timestamp
+        Time.now.to_i
       end
     end
   end

@@ -30,8 +30,7 @@ module Cerner
         signature_key = "#{client_shared_secret}&#{token_shared_secret}"
         signature = OpenSSL::HMAC.digest('sha1', signature_key, signature_base_string)
         encoded_signature = Base64.encode64(signature)
-        encoded_signature.chomp!
-        encoded_signature.gsub!(/\n/, '')
+        encoded_signature.delete!("\n")
         encoded_signature
       end
 

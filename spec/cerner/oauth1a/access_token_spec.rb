@@ -665,9 +665,9 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       expect(access_token.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
       expect(access_token.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
       expect(access_token.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
-      expect(access_token.authorization_header).to(include('oauth_nonce="NONCE"'))
+      expect(access_token.authorization_header).not_to(include('oauth_nonce="NONCE"'))
       expect(access_token.authorization_header).to(include('oauth_token="TOKEN"'))
-      expect(access_token.authorization_header).to(match(/oauth_timestamp="\d+"/))
+      expect(access_token.authorization_header).not_to(match(/oauth_timestamp="\d+"/))
     end
 
     it 'contains populated parts' do

@@ -40,6 +40,7 @@ module Cerner
         raise OAuthError.new('', nil, 'parameter_absent', missing_params) unless missing_params.empty?
 
         AccessToken.new(
+          accessor_secret: params[:oauth_accessor_secret],
           consumer_key: consumer_key,
           nonce: params[:oauth_nonce],
           timestamp: params[:oauth_timestamp],
@@ -50,15 +51,18 @@ module Cerner
         )
       end
 
-      # Returns a String, but may be nil, with the Accessor Secret related to this token.
+      # Returns a String, but may be nil, with the Accessor Secret (oauth_accessor_secret) related
+      # to this token. Note: nil and empty are considered equivalent.
       attr_reader :accessor_secret
       # Returns a String with the Consumer Key (oauth_consumer_key) related to this token.
       attr_reader :consumer_key
       # Returns a Time, but may be nil, which represents the moment when this token expires.
       attr_reader :expires_at
-      # Returns a String, but may be nil, with the Nonce (oauth_nonce) related to this token.
+      # Returns a String, but may be nil, with the Nonce (oauth_nonce) related to this token. This
+      # is generally only populated when parsing a token for authentication.
       attr_reader :nonce
-      # Returns a Time, but may be nil, which represents the moment when this token was created (oauth_timestamp).
+      # Returns a Time, but may be nil, with the Timestamp (oauth_timestamp) related to this token.
+      # This is generally only populated when parsing a token for authentication.
       attr_reader :timestamp
       # Returns a String with the Token (oauth_token).
       attr_reader :token
@@ -125,20 +129,64 @@ module Cerner
       end
 
       # Public: Generates a value suitable for use as an HTTP Authorization header. If #signature is
-      # nil, then #accessor_secret and #token_secret will be used to build a signature via the
-      # PLAINTEXT method.
+      # nil, then a signature will be generated based on the #signature_method.
+      #
+      # PLAINTEXT Signature (preferred)
+      #
+      # When using PLAINTEXT signatures, no additional arguments are necessary. If an oauth_nonce
+      # or oauth_timestamp are desired, then the values can be passed via the :nonce and :timestamp
+      # keyword arguments. The actual signature will be constructed from the Accessor Secret
+      # (#accessor_secret) and the Token Secret (#token_secret).
+      #
+      # HMAC-SHA1 Signature
+      #
+      # When using HMAC-SHA1 signatures, access to the HTTP request information is necessary. This
+      # requies that additional information is passed via the keyword arguments. The required
+      # information includes the HTTP method (see :http_method), the host authority & path (see
+      # :fully_qualified_url) and the request parameters (see :fully_qualified_url and
+      # :request_params).
+      #
+      # keywords - The keyword arguments:
+      #            :nonce               - The optional String containing a Nonce to generate the
+      #                                   header with HMAC-SHA1 signatures. When nil, a Nonce will
+      #                                   be generated.
+      #            :timestamp           - The optional Time or #to_i compliant object containing a
+      #                                   Timestamp to generate the header with HMAC-SHA1
+      #                                   signatures. When nil, a Timestamp will be generated.
+      #            :http_method         - The optional String or Symbol containing a HTTP Method for
+      #                                   constructing the HMAC-SHA1 signature. When nil, the value
+      #                                   defualts to 'GET'.
+      #            :fully_qualified_url - The optional String or URI containing the fully qualified
+      #                                   URL of the HTTP API being invoked for constructing the
+      #                                   HMAC-SHA1 signature. If the URL contains a query string,
+      #                                   the parameters will be extracted and used in addition to
+      #                                   the :request_params keyword argument.
+      #            :request_params      - The optional Hash of name/value pairs containing the
+      #                                   request parameters of the HTTP API being invoked for
+      #                                   constructing the HMAC-SHA1 signature. Parameters passed
+      #                                   here will override and augment those passed in the
+      #                                   :fully_qualified_url parameter. The parameter names and
+      #                                   values MUST be unencoded. See
+      #                                   Protocol#parse_url_query_string for help with decoding an
+      #                                   encoded query string.
       #
       # Returns a String representation of the access token.
       #
       # Raises Cerner::OAuth1a::OAuthError if #signature_method is not PLAINTEXT or if a signature
       # can't be determined.
-      def authorization_header(http_method: nil, fully_qualified_url: nil, request_params: nil)
+      def authorization_header(
+        nonce: nil,
+        timestamp: nil,
+        http_method: 'GET',
+        fully_qualified_url: nil,
+        request_params: nil
+      )
         oauth_params = {}
         oauth_params[:oauth_version] = '1.0'
         oauth_params[:oauth_signature_method] = @signature_method
         oauth_params[:oauth_consumer_key] = @consumer_key
-        oauth_params[:oauth_nonce] = @nonce if @nonce
-        oauth_params[:oauth_timestamp] = @timestamp.tv_sec if @timestamp
+        oauth_params[:oauth_nonce] = nonce if nonce
+        oauth_params[:oauth_timestamp] = convert_to_time(timestamp).to_i if timestamp
         oauth_params[:oauth_token] = @token
 
         if @signature
@@ -158,6 +206,8 @@ module Cerner
           elsif @signature_method == 'HMAC-SHA1'
             http_method ||= 'GET' # default to HTTP GET
             request_params ||= {} # default to no request params
+            oauth_params[:oauth_nonce] = SecureRandom.hex unless oauth_params[:oauth_nonce]
+            oauth_params[:oauth_timestamp] = Time.now.to_i unless oauth_params[:oauth_timestamp]
 
             begin
               fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
