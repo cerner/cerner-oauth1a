@@ -282,7 +282,13 @@ module Cerner
         # RSASHA1 param gets consumed in #verify_token, so remove it too
         tuples.delete(:RSASHA1)
 
-        verify_signature(keys, tuples.delete(:HMACSecrets), http_method: http_method, fully_qualified_url: fully_qualified_url, request_params: request_params)
+        verify_signature(
+          keys: keys,
+          hmac_secrets: tuples.delete(:HMACSecrets),
+          http_method: http_method,
+          fully_qualified_url: fully_qualified_url,
+          request_params: request_params
+        )
 
         @consumer_principal = tuples.delete(:"Consumer.Principal")
 
@@ -430,8 +436,8 @@ module Cerner
       # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
       # not match the secrets
       def verify_signature(
-        keys,
-        hmac_secrets,
+        keys:,
+        hmac_secrets:,
         http_method:,
         fully_qualified_url:,
         request_params:

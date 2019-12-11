@@ -228,8 +228,6 @@ module Cerner
         http.open_timeout = @open_timeout
         http.read_timeout = @read_timeout
 
-        http.set_debug_output($stdout)
-
         http
       end
 
