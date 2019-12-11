@@ -132,7 +132,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -329,7 +329,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -349,14 +349,14 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -374,14 +374,14 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
             'Extra=SOMETHING&' \
             "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
             'KeysVersion=1&HMACSecrets=SECRETS',
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -399,14 +399,14 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -460,7 +460,8 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
 
     context 'returns true' do
       it 'when compared to self' do
-        expect(access_token == access_token).to(be(true))
+        local_access_token = access_token
+        expect(access_token == local_access_token).to(be(true))
         expect(access_token.eql?(access_token)).to(be(true))
       end
 

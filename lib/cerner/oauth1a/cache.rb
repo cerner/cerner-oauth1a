@@ -6,6 +6,7 @@ module Cerner
     class Cache
       @cache_instance_lock = Mutex.new
 
+      # Internal: Sets the singleton instance.
       def self.instance=(cache_impl)
         raise ArgumentError, 'cache_impl must not be nil' unless cache_impl
 
@@ -14,6 +15,7 @@ module Cerner
         end
       end
 
+      # Internal: Gets the singleton instance.
       def self.instance
         @cache_instance_lock.synchronize do
           return @cache_instance if @cache_instance
@@ -27,12 +29,14 @@ module Cerner
         attr_reader :value
         attr_reader :expires_in
 
+        # Internal: Constructs an instance.
         def initialize(keys, expires_in)
           @value = keys
           @expires_in = expires_in
           @expires_at = Time.now.utc.to_i + @expires_in
         end
 
+        # Internal: Check if the entry is expired.
         def expired?(now)
           @expires_at <= now
         end
@@ -42,14 +46,17 @@ module Cerner
       class AccessTokenEntry
         attr_reader :value
 
+        # Internal: Constructs an instance.
         def initialize(access_token)
           @value = access_token
         end
 
+        # Internal: Returns the number of seconds until the entry expires.
         def expires_in
           @value.expires_at.to_i - Time.now.utc.to_i
         end
 
+        # Internal: Check if the entry is expired.
         def expired?(now)
           @value.expired?(now: now)
         end
@@ -61,6 +68,7 @@ module Cerner
       # Internal: The default implementation of the Cerner::OAuth1a::Cache interface.
       # This implementation just maintains a capped list of entries in memory.
       class DefaultCache < Cerner::OAuth1a::Cache
+        # Internal: Constructs an instance.
         def initialize(max:)
           super()
           @max = max
@@ -68,6 +76,7 @@ module Cerner
           @entries = {}
         end
 
+        # Internal: Puts an entry into the cache.
         def put(namespace, key, entry)
           @lock.synchronize do
             now = Time.now.utc.to_i
@@ -77,6 +86,7 @@ module Cerner
           end
         end
 
+        # Internal: Gets an entry from the cache.
         def get(namespace, key)
           @lock.synchronize do
             prune_expired(Time.now.utc.to_i)

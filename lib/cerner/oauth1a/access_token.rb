@@ -193,9 +193,8 @@ module Cerner
         else
           # NOTE: @accessor_secret is always used, but an empty value is allowed and project assumes
           # that nil implies an empty value
-          unless @token_secret
-            raise OAuthError.new('token_secret is nil', nil, 'parameter_absent', nil, @realm)
-          end
+
+          raise OAuthError.new('token_secret is nil', nil, 'parameter_absent', nil, @realm) unless @token_secret
 
           if @signature_method == 'PLAINTEXT'
             sig = Signature.sign_via_plaintext(
@@ -223,6 +222,7 @@ module Cerner
               fully_qualified_url: fully_qualified_url,
               params: params
             )
+
             sig = Signature.sign_via_hmacsha1(
               client_shared_secret: @accessor_secret,
               token_shared_secret: @token_secret,
@@ -423,9 +423,9 @@ module Cerner
       #
       # Raises OAuthError if the parameter is not authentic
       def verify_token(keys)
-        unless keys.verify_rsasha1_signature(@token)
-          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
-        end
+        return if keys.verify_rsasha1_signature(@token)
+
+        raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
       end
 
       # Internal: Used by #authenticate to verify the request signature.
@@ -464,11 +464,10 @@ module Cerner
         secrets_parts = Protocol.parse_url_query_string(secrets)
 
         if @signature_method == 'PLAINTEXT'
-          expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
-
-          unless @signature == expected_signature
-            raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
-          end
+          expected_signature = Signature.sign_via_plaintext(
+            client_shared_secret: secrets_parts[:ConsumerSecret],
+            token_shared_secret: secrets_parts[:TokenSecret]
+          )
         elsif @signature_method == 'HMAC-SHA1'
           http_method ||= 'GET' # default to HTTP GET
           request_params ||= {} # default to no request params
@@ -477,7 +476,8 @@ module Cerner
             oauth_signature_method: 'HMAC-SHA1',
             oauth_consumer_key: @consumer_key,
             oauth_nonce: @nonce,
-            oauth_timestamp: @timestamp.to_i
+            oauth_timestamp: @timestamp.to_i,
+            oauth_token: @token
           }
 
           begin
@@ -495,14 +495,25 @@ module Cerner
             fully_qualified_url: fully_qualified_url,
             params: params
           )
-          sig = Signature.sign_via_hmacsha1(
-            client_shared_secret: @accessor_secret,
-            token_shared_secret: @token_secret,
+
+          expected_signature = Signature.sign_via_hmacsha1(
+            client_shared_secret: secrets_parts[:ConsumerSecret],
+            token_shared_secret: secrets_parts[:TokenSecret],
             signature_base_string: signature_base_string
           )
         else
-          raise OAuthError.new('signature_method must be PLAINTEXT or HMAC-SHA1', nil, 'signature_method_rejected', nil, @realm)
+          raise OAuthError.new(
+            'signature_method must be PLAINTEXT or HMAC-SHA1',
+            nil,
+            'signature_method_rejected',
+            nil,
+            @realm
+          )
         end
+
+        return if @signature == expected_signature
+
+        raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
       end
     end
   end
