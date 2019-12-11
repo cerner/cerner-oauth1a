@@ -115,7 +115,6 @@ module Cerner
         raise ArgumentError, 'token is nil' unless token
 
         @accessor_secret = accessor_secret || nil
-        @authorization_header = nil
         @consumer_key = consumer_key
         @consumer_principal = nil
         @expires_at = expires_at ? convert_to_time(expires_at) : nil
@@ -215,7 +214,7 @@ module Cerner
               raise OAuthError.new(ae.message, nil, 'parameter_absent', nil, @realm)
             end
 
-            query_params = Protocol.parse_url_query_string(fully_qualified_url.query)
+            query_params = fully_qualified_url.query ? Protocol.parse_url_query_string(fully_qualified_url.query) : {}
             request_params = query_params.merge(request_params)
 
             params = request_params.merge(oauth_params)
@@ -254,7 +253,12 @@ module Cerner
       #
       # Raises ArgumentError if access_token_agent is nil
       # Raises Cerner::OAuth1a::OAuthError with an oauth_problem if authentication fails.
-      def authenticate(access_token_agent)
+      def authenticate(
+        access_token_agent,
+        http_method: 'GET',
+        fully_qualified_url: nil,
+        request_params: nil
+      )
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
 
         if @realm && !access_token_agent.realm_eql?(@realm)
@@ -263,10 +267,6 @@ module Cerner
 
         # Set realm to the provider's realm if it's not already set
         @realm ||= access_token_agent.realm
-
-        unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
-        end
 
         tuples = Protocol.parse_url_query_string(@token)
 
@@ -282,7 +282,7 @@ module Cerner
         # RSASHA1 param gets consumed in #verify_token, so remove it too
         tuples.delete(:RSASHA1)
 
-        verify_signature(keys, tuples.delete(:HMACSecrets))
+        verify_signature(keys, tuples.delete(:HMACSecrets), http_method: http_method, fully_qualified_url: fully_qualified_url, request_params: request_params)
 
         @consumer_principal = tuples.delete(:"Consumer.Principal")
 
@@ -429,7 +429,13 @@ module Cerner
       #
       # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
       # not match the secrets
-      def verify_signature(keys, hmac_secrets)
+      def verify_signature(
+        keys,
+        hmac_secrets,
+        http_method:,
+        fully_qualified_url:,
+        request_params:
+      )
         unless @signature
           raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature', @realm)
         end
@@ -451,11 +457,45 @@ module Cerner
 
         secrets_parts = Protocol.parse_url_query_string(secrets)
 
-        # if @signature_method == 'PLAINTEXT'
-        expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
+        if @signature_method == 'PLAINTEXT'
+          expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
 
-        unless @signature == expected_signature
-          raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
+          unless @signature == expected_signature
+            raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
+          end
+        elsif @signature_method == 'HMAC-SHA1'
+          http_method ||= 'GET' # default to HTTP GET
+          request_params ||= {} # default to no request params
+          oauth_params = {
+            oauth_version: '1.0', # FIXME: assumes version is present
+            oauth_signature_method: 'HMAC-SHA1',
+            oauth_consumer_key: @consumer_key,
+            oauth_nonce: @nonce,
+            oauth_timestamp: @timestamp.to_i
+          }
+
+          begin
+            fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
+          rescue ArgumentError => ae
+            raise OAuthError.new(ae.message, nil, 'parameter_absent', nil, @realm)
+          end
+
+          query_params = fully_qualified_url.query ? Protocol.parse_url_query_string(fully_qualified_url.query) : {}
+          request_params = query_params.merge(request_params)
+
+          params = request_params.merge(oauth_params)
+          signature_base_string = Signature.build_signature_base_string(
+            http_method: http_method,
+            fully_qualified_url: fully_qualified_url,
+            params: params
+          )
+          sig = Signature.sign_via_hmacsha1(
+            client_shared_secret: @accessor_secret,
+            token_shared_secret: @token_secret,
+            signature_base_string: signature_base_string
+          )
+        else
+          raise OAuthError.new('signature_method must be PLAINTEXT or HMAC-SHA1', nil, 'signature_method_rejected', nil, @realm)
         end
       end
     end

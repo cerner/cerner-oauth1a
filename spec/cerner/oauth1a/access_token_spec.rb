@@ -122,11 +122,20 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'TOKEN',
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          signature: 'SIGNATURE',
           signature_method: 'REJECT_THIS',
           realm: 'REALM'
         )
+        keys = double('Keys')
+        expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
+        expect(keys).to(
+          receive(:decrypt_hmac_secrets)
+            .with('SECRETS')
+            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+        )
         ata = double('AccessTokenAgent')
+        expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
         expect(ata).to(receive(:realm_eql?).and_return(true))
         expect { at.authenticate(ata) }.to(raise_error do |error|
           expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
@@ -174,7 +183,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -191,7 +200,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -208,7 +217,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -228,7 +237,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           realm: 'REALM'
         )
         keys = double('Keys')
@@ -248,7 +257,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           realm: 'REALM'
         )
         keys = double('Keys')
@@ -268,7 +277,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -289,7 +298,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -311,7 +320,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -339,7 +348,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'CONSUMER SECRET&TOKEN SECRET'
         )
         keys = double('Keys')
@@ -361,7 +370,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           nonce: 'NONCE',
           timestamp: Time.now,
           token: 'Consumer.Principal=CONSUMER+PRINCIPAL&' \
-            'ConsumerKey=CONSUMER+KEY&' \
+            'ConsumerKey=CONSUMER%20KEY&' \
             'Extra=SOMETHING&' \
             "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
             'KeysVersion=1&HMACSecrets=SECRETS',
@@ -389,7 +398,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'CONSUMER SECRET&TOKEN SECRET'
         )
         keys = double('Keys')

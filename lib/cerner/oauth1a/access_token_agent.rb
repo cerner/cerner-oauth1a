@@ -228,6 +228,8 @@ module Cerner
         http.open_timeout = @open_timeout
         http.read_timeout = @read_timeout
 
+        http.set_debug_output($stdout)
+
         http
       end
 
@@ -304,10 +306,11 @@ module Cerner
 
       # Internal: Prepare a request for #retrieve_keys
       def retrieve_keys_prepare_request(keys_version)
-        request = Net::HTTP::Get.new(URI("#{@access_token_url}/keys/#{keys_version}"))
+        keys_url = URI("#{@access_token_url}/keys/#{keys_version}")
+        request = Net::HTTP::Get.new(keys_url)
         request['Accept'] = 'application/json'
         request['User-Agent'] = user_agent_string
-        request['Authorization'] = retrieve.authorization_header
+        request['Authorization'] = retrieve.authorization_header(fully_qualified_url: keys_url)
         request
       end
 
