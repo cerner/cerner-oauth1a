@@ -7,6 +7,7 @@ require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/cache'
 require 'cerner/oauth1a/internal'
 require 'cerner/oauth1a/protocol'
+require 'cerner/oauth1a/signature'
 require 'cerner/oauth1a/version'
 require 'json'
 require 'net/http'
@@ -71,9 +72,11 @@ module Cerner
       #                                    realm that's extracted from :access_token_url. If nil,
       #                                    this will be initalized with the DEFAULT_REALM_ALIASES.
       #                                    (optional, default: nil)
+      #             :signature_method    - A String to set the signature method to use. MUST be
+      #                                    PLAINTEXT or HMAC-SHA1. (optional, default: 'PLAINTEXT')
       #
       # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if
-      #                      access_token_url is an invalid URI.
+      #                      access_token_url is an invalid URI; if signature_method is invalid.
       def initialize(
         access_token_url:,
         consumer_key:,
@@ -103,6 +106,7 @@ module Cerner
         @access_token_cache = cache_access_tokens ? Cache.instance : nil
 
         @signature_method = signature_method || 'PLAINTEXT'
+        raise ArgumentError, 'signature_method is invalid' unless Signature::METHODS.include?(@signature_method)
       end
 
       # Public: Retrieves the service provider keys from the configured Access Token service endpoint
@@ -111,7 +115,7 @@ module Cerner
       #
       # keys_version - The version identifier of the keys to retrieve. This corresponds to the
       #                KeysVersion parameter of the oauth_token.
-      # keywords     - The additional, optional keyword arguments for this method
+      # keywords     - The keyword arguments:
       #               :ignore_cache - A flag for indicating that the cache should be ignored and a
       #                               new Access Token should be retrieved.
       #
@@ -139,7 +143,7 @@ module Cerner
       # This method will use the #generate_accessor_secret, #generate_nonce and #generate_timestamp methods to
       # interact with the service, which can be overridden via a sub-class, if desired.
       #
-      # keywords - The additional, optional keyword arguments for this method
+      # keywords - The keyword arguments:
       #            :principal    - An optional principal identifier, which is passed via the
       #                            xoauth_principal protocol parameter.
       #            :ignore_cache - A flag for indicating that the cache should be ignored and a new

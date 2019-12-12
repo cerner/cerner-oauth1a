@@ -9,6 +9,8 @@ module Cerner
   module OAuth1a
     # Public: OAuth 1.0a signature utilities.
     module Signature
+      METHODS = ['PLAINTEXT', 'HMAC-SHA1'].freeze
+
       # Public: Creates a PLAINTEXT signature.
       #
       # Reference: https://tools.ietf.org/html/rfc5849#section-3.4.4

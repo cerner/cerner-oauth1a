@@ -92,7 +92,7 @@ module Cerner
       #                                 object responding to to_i that represents the creation
       #                                 moment as the number of seconds since the epoch.
       #             :token            - The required String representing the token.
-      #             :token_secret     - The required String representing the token secret.
+      #             :token_secret     - The optional String representing the token secret.
       #             :signature_method - The optional String representing the signature method.
       #                                 Defaults to PLAINTEXT.
       #             :signature        - The optional String representing the signature.
@@ -247,6 +247,15 @@ module Cerner
       # access_token_agent - An instance of Cerner::OAuth1a::AccessTokenAgent configured with
       #                      appropriate credentials to retrieve secrets via
       #                      Cerner::OAuth1a::AccessTokenAgent#retrieve_keys.
+      # keywords           - The keyword arguments:
+      #                      :http_method         - An optional String or Symbol containing an HTTP
+      #                                             method name. (default: 'GET')
+      #                      :fully_qualified_url - An optional String or URI that contains the
+      #                                             scheme, host, port (optional) and path of a URL.
+      #                      :request_params      - An optional Hash of name/value pairs
+      #                                             representing the request parameters. The keys
+      #                                             and values  of the Hash will be assumed to be
+      #                                             represented by the value returned from #to_s.
       #
       # Returns a Hash (symbolized keys) of any extra parameters within #token (oauth_token),
       # if authentication succeeds. In most scenarios, the Hash will be empty.
@@ -378,10 +387,6 @@ module Cerner
       end
 
       # Internal: Used by #authenticate to verify the expiration time.
-      #
-      # expires_on - The ExpiresOn parameter of oauth_token
-      #
-      # Raises OAuthError if the parameter is invalid or expired
       def verify_expiration(expires_on)
         unless expires_on
           raise OAuthError.new(
@@ -399,6 +404,7 @@ module Cerner
         raise OAuthError.new('token has expired', nil, 'token_expired', nil, @realm) if now.tv_sec >= expires_on.tv_sec
       end
 
+      # Internal: Used by #authenticate to load the keys
       def load_keys(access_token_agent, keys_version)
         unless keys_version
           raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
@@ -418,10 +424,6 @@ module Cerner
       end
 
       # Internal: Used by #authenticate to verify the oauth_token value.
-      #
-      # keys - The Keys instance that contains the key used to sign the oauth_token
-      #
-      # Raises OAuthError if the parameter is not authentic
       def verify_token(keys)
         return if keys.verify_rsasha1_signature(@token)
 
@@ -429,12 +431,6 @@ module Cerner
       end
 
       # Internal: Used by #authenticate to verify the request signature.
-      #
-      # keys         - The Keys instance that contains the key used to encrypt the HMACSecrets
-      # hmac_secrets - The HMACSecrets parameter of oauth_token
-      #
-      # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
-      # not match the secrets
       def verify_signature(
         keys:,
         hmac_secrets:,
