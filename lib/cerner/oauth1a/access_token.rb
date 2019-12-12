@@ -117,11 +117,11 @@ module Cerner
         @accessor_secret = accessor_secret || nil
         @consumer_key = consumer_key
         @consumer_principal = nil
-        @expires_at = expires_at ? convert_to_time(expires_at) : nil
+        @expires_at = expires_at ? Internal.convert_to_time(time: expires_at, name: 'expires_at') : nil
         @nonce = nonce
         @signature = signature
         @signature_method = signature_method || 'PLAINTEXT'
-        @timestamp = timestamp ? convert_to_time(timestamp) : nil
+        @timestamp = timestamp ? Internal.convert_to_time(time: timestamp, name: 'timestamp') : nil
         @token = token
         @token_secret = token_secret || nil
         @realm = realm || nil
@@ -185,7 +185,7 @@ module Cerner
         oauth_params[:oauth_signature_method] = @signature_method
         oauth_params[:oauth_consumer_key] = @consumer_key
         oauth_params[:oauth_nonce] = nonce if nonce
-        oauth_params[:oauth_timestamp] = convert_to_time(timestamp).to_i if timestamp
+        oauth_params[:oauth_timestamp] = Internal.convert_to_time(time: timestamp, name: 'timestamp').to_i if timestamp
         oauth_params[:oauth_token] = @token
 
         if @signature
@@ -319,7 +319,7 @@ module Cerner
         # if @expires_at is nil, return true now
         return true unless @expires_at
 
-        now = convert_to_time(now)
+        now = Internal.convert_to_time(time: now, name: 'now')
         now.tv_sec >= @expires_at.tv_sec - fudge_sec
       end
 
@@ -371,21 +371,6 @@ module Cerner
 
       private
 
-      # Internal: Used by #initialize and #expired? to convert data into a Time instance.
-      #
-      # time - Time or any object with a #to_i the returns an Integer.
-      #
-      # Returns a Time instance in the UTC time zone.
-      def convert_to_time(time)
-        raise ArgumentError, 'time is nil' unless time
-
-        if time.is_a?(Time)
-          time.utc
-        else
-          Time.at(time.to_i).utc
-        end
-      end
-
       # Internal: Used by #authenticate to verify the expiration time.
       def verify_expiration(expires_on)
         unless expires_on
@@ -398,8 +383,8 @@ module Cerner
           )
         end
 
-        expires_on = convert_to_time(expires_on)
-        now = convert_to_time(Time.now)
+        expires_on = Internal.convert_to_time(time: expires_on, name: 'expires_on')
+        now = Internal.convert_to_time(time: Time.now)
 
         raise OAuthError.new('token has expired', nil, 'token_expired', nil, @realm) if now.tv_sec >= expires_on.tv_sec
       end
