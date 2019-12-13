@@ -204,8 +204,8 @@ module Cerner
           elsif @signature_method == 'HMAC-SHA1'
             http_method ||= 'GET' # default to HTTP GET
             request_params ||= {} # default to no request params
-            oauth_params[:oauth_nonce] = SecureRandom.hex unless oauth_params[:oauth_nonce]
-            oauth_params[:oauth_timestamp] = Time.now.to_i unless oauth_params[:oauth_timestamp]
+            oauth_params[:oauth_nonce] = Internal.generate_nonce unless oauth_params[:oauth_nonce]
+            oauth_params[:oauth_timestamp] = Internal.generate_timestamp unless oauth_params[:oauth_timestamp]
 
             begin
               fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
@@ -453,7 +453,7 @@ module Cerner
           http_method ||= 'GET' # default to HTTP GET
           request_params ||= {} # default to no request params
           oauth_params = {
-            oauth_version: '1.0', # FIXME: assumes version is present
+            oauth_version: '1.0', # assumes version is present
             oauth_signature_method: 'HMAC-SHA1',
             oauth_consumer_key: @consumer_key,
             oauth_nonce: @nonce,

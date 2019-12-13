@@ -343,7 +343,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     end
 
     context 'returns Hash' do
-      it 'that is empty' do
+      it 'with PLAINTEXT signature' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
@@ -364,7 +364,47 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect(at.authenticate(ata)).to(eq({}))
       end
 
-      it 'with Consumer.Principal' do
+      it 'with HMAC-SHA1 signature' do
+        params = {
+          oauth_version: '1.0',
+          oauth_consumer_key: 'CONSUMER KEY',
+          oauth_nonce: 'NONCE',
+          oauth_timestamp: Time.now.to_i.to_s,
+          oauth_token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          oauth_signature_method: 'HMAC-SHA1'
+        }
+        sbs = Cerner::OAuth1a::Signature.build_signature_base_string(
+          http_method: 'GET',
+          fully_qualified_url: 'https://example/path',
+          params: params
+        )
+        sig = Cerner::OAuth1a::Signature.sign_via_hmacsha1(
+          client_shared_secret: '',
+          token_shared_secret: '',
+          signature_base_string: sbs
+        )
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: params[:oauth_consumer_key],
+          nonce: params[:oauth_nonce],
+          timestamp: params[:oauth_timestamp],
+          token: params[:oauth_token],
+          signature_method: params[:oauth_signature_method],
+          signature: sig
+        )
+        keys = double('Keys')
+        expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
+        expect(keys).to(
+          receive(:decrypt_hmac_secrets)
+            .with('SECRETS')
+            .and_return('ConsumerSecret=&TokenSecret=')
+        )
+        ata = double('AccessTokenAgent')
+        expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
+        expect(ata).to(receive(:realm).and_return('REALM'))
+        expect(at.authenticate(ata, fully_qualified_url: 'https://example/path')).to(eq({}))
+      end
+
+      it 'and populates consumer_principal' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
@@ -633,7 +673,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     end
 
     context 'raises error' do
-      it 'when signature_method is not PLAINTEXT' do
+      it 'when signature_method is not valid' do
         at = Cerner::OAuth1a::AccessToken.new(
           accessor_secret: 'ACCESSOR SECRET',
           consumer_key: 'CONSUMER KEY',
@@ -696,6 +736,26 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       expect(at.authorization_header).not_to(include('oauth_nonce'))
       expect(at.authorization_header).not_to(include('oauth_timestamp'))
       expect(at.authorization_header).not_to(include('realm'))
+    end
+
+    it 'signs with HMAC-SHA1 method' do
+      at = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: '',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: expires_at,
+        token: 'TOKEN',
+        token_secret: '',
+        signature_method: 'HMAC-SHA1'
+      )
+      authz_header = at.authorization_header(fully_qualified_url: 'http://example/path')
+      expect(authz_header).to(include('oauth_version="1.0"'))
+      expect(authz_header).to(include('oauth_signature_method="HMAC-SHA1"'))
+      expect(authz_header).to(match(/oauth_signature="[^\"]+"/))
+      expect(authz_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
+      expect(authz_header).to(include('oauth_token="TOKEN"'))
+      expect(authz_header).to(match(/oauth_timestamp="\d+"/))
+      expect(authz_header).to(match(/oauth_nonce="[^\"]+"/))
+      expect(authz_header).not_to(include('realm'))
     end
 
     it 'allows accessor_secret to be nil' do

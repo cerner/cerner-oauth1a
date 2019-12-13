@@ -186,14 +186,14 @@ module Cerner
       #
       # Returns a String containing the nonce.
       def generate_nonce
-        SecureRandom.hex
+        Internal.generate_nonce
       end
 
       # Public: Generate a Timestamp for invocations of the Access Token service.
       #
       # Returns an Integer representing the number of seconds since the epoch.
       def generate_timestamp
-        Time.now.to_i
+        Internal.generate_timestamp
       end
 
       # Public: Determines if the passed realm is equivalent to the configured
