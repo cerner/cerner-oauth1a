@@ -117,7 +117,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         end)
       end
 
-      it 'when signature_method is not PLAINTEXT' do
+      it 'when signature_method is not valid' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
@@ -691,6 +691,24 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       expect(at.authorization_header).to(include('oauth_version="1.0"'))
       expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
       expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
+      expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
+      expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
+      expect(at.authorization_header).not_to(include('oauth_nonce'))
+      expect(at.authorization_header).not_to(include('oauth_timestamp'))
+      expect(at.authorization_header).not_to(include('realm'))
+    end
+
+    it 'allows accessor_secret to be nil' do
+      at = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: nil,
+        consumer_key: 'CONSUMER KEY',
+        expires_at: expires_at,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET'
+      )
+      expect(at.authorization_header).to(include('oauth_version="1.0"'))
+      expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
+      expect(at.authorization_header).to(include('oauth_signature="%26TOKEN%2520SECRET"'))
       expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
       expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
       expect(at.authorization_header).not_to(include('oauth_nonce'))
