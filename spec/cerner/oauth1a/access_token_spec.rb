@@ -370,7 +370,9 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           oauth_consumer_key: 'CONSUMER KEY',
           oauth_nonce: 'NONCE',
           oauth_timestamp: Time.now.to_i.to_s,
-          oauth_token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          oauth_token: 'ConsumerKey=CONSUMER%20KEY&' \
+            "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
+            'KeysVersion=1&HMACSecrets=SECRETS',
           oauth_signature_method: 'HMAC-SHA1'
         }
         sbs = Cerner::OAuth1a::Signature.build_signature_base_string(

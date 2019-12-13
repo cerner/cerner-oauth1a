@@ -9,9 +9,9 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
     it 'signs empty secrets' do
       expect(
         Cerner::OAuth1a::Signature.sign_via_hmacsha1(
-          client_shared_secret: "",
-          token_shared_secret: "",
-          signature_base_string: "signature"
+          client_shared_secret: '',
+          token_shared_secret: '',
+          signature_base_string: 'signature'
         )
       ).to(eq('vX80J+zTatuolnnMETy5owZLHdQ='))
     end
@@ -19,9 +19,9 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
     it 'signs secrets' do
       expect(
         Cerner::OAuth1a::Signature.sign_via_hmacsha1(
-          client_shared_secret: "css",
-          token_shared_secret: "tss",
-          signature_base_string: "signature"
+          client_shared_secret: 'css',
+          token_shared_secret: 'tss',
+          signature_base_string: 'signature'
         )
       ).to(eq('vYi97aRXz2cSvplKapDQvQmH/Bc='))
     end
@@ -53,8 +53,8 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
     it 'signs empty secrets' do
       expect(
         Cerner::OAuth1a::Signature.sign_via_plaintext(
-          client_shared_secret: "",
-          token_shared_secret: ""
+          client_shared_secret: '',
+          token_shared_secret: ''
         )
       ).to(eq('&'))
     end
@@ -62,8 +62,8 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
     it 'signs secrets' do
       expect(
         Cerner::OAuth1a::Signature.sign_via_plaintext(
-          client_shared_secret: "css",
-          token_shared_secret: "tss"
+          client_shared_secret: 'css',
+          token_shared_secret: 'tss'
         )
       ).to(eq('css&tss'))
     end
@@ -71,8 +71,8 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
     it 'encodes secrets' do
       expect(
         Cerner::OAuth1a::Signature.sign_via_plaintext(
-          client_shared_secret: "c s s",
-          token_shared_secret: "t s s"
+          client_shared_secret: 'c s s',
+          token_shared_secret: 't s s'
         )
       ).to(eq('c%20s%20s&t%20s%20s'))
     end
@@ -85,25 +85,25 @@ RSpec.describe(Cerner::OAuth1a::Signature) do
 
     context 'normalizes' do
       it 'parameter from Strings' do
-        expect(Cerner::OAuth1a::Signature.normalize_parameters({"name" => "value"})).to(
+        expect(Cerner::OAuth1a::Signature.normalize_parameters('name' => 'value')).to(
           eq('name%3Dvalue')
         )
       end
 
       it 'sorts names' do
-        expect(Cerner::OAuth1a::Signature.normalize_parameters({"n2" => "v2", "n1" => "v1"})).to(
+        expect(Cerner::OAuth1a::Signature.normalize_parameters('n2' => 'v2', 'n1' => 'v1')).to(
           eq('n1%3Dv1%26n2%3Dv2')
         )
       end
 
       it 'sorts values' do
-        expect(Cerner::OAuth1a::Signature.normalize_parameters({"n" => ["v2", "v1"]})).to(
+        expect(Cerner::OAuth1a::Signature.normalize_parameters('n' => ['v2', 'v1'])).to(
           eq('n%3Dv1%26n%3Dv2')
         )
       end
 
       it 'encodes name and value' do
-        expect(Cerner::OAuth1a::Signature.normalize_parameters({"n 1" => "v 1"})).to(
+        expect(Cerner::OAuth1a::Signature.normalize_parameters('n 1' => 'v 1')).to(
           eq('n%25201%3Dv%25201')
         )
       end

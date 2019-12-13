@@ -23,6 +23,7 @@ module Cerner
           Time.at(time.to_i).utc
         end
       end
+
       # Internal: Convert an fully qualified URL String into a URI with some verification checks
       #
       # keywords - The keyword arguments:
