@@ -151,6 +151,7 @@ cache to use an implementation that stores the AccessTokens and Keys within Rail
 
 ## References
 * https://wiki.ucern.com/display/public/reference/Cerner%27s+OAuth+Specification
+  * https://tools.ietf.org/html/rfc5849
   * http://oauth.net/core/1.0a
   * http://oauth.pbwiki.com/ProblemReporting
 * https://wiki.ucern.com/display/public/reference/Accessing+Cerner%27s+Web+Services+Using+OAuth+1.0a
