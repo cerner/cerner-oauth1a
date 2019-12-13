@@ -38,7 +38,53 @@ for implementing a Ruby-based service.
     # Invoke the API's HTTP endpoint and use the AccessToken to generate an Authorization header
     response = http.request_get(uri.path, Authorization: access_token.authorization_header)
 
+### Consumer HMAC-SHA1 Signature Method
+
+The preferred and default signature method is PLAINTEXT, as all communication SHOULD be via TLS. However, if HMAC-SHA1 signatures are necessary, then this can be achieved by constructing AccessTokenAgent as follows:
+
+    agent = Cerner::OAuth1a::AccessTokenAgent.new(
+      access_token_url: 'https://oauth-api.cerner.com/oauth/access',
+      consumer_key: 'CONSUMER_KEY',
+      consumer_secret: 'CONSUMER_SECRET',
+      signature_method: 'HMAC-SHA1'
+    )
+
+To use the AccessToken requires additional parameters to be passed when constructing the Authorization header. The HTTP method, the URL being invoked and all request parameters. The request parameters should include all parameters passed in the query string and those passed in the body if the Content-Type of the body is `application/x-www-form-urlencoded`. See the specification for more details.
+
+#### Consumer HMAC-SHA1 Signature Method Examples
+
+GET with no request parameters
+
+    uri = URI('https://authz-demo-api.cerner.com/me')
+    # ...
+    authz_header = access_token.authorization_header(fully_qualified_url: uri)
+
+GET with request parameters in URL
+
+    uri = URI('https://authz-demo-api.cerner.com/me?name=value')
+    # ...
+    authz_header = access_token.authorization_header(fully_qualified_url: uri)
+
+POST with request parameters (form post)
+
+    authz_header = access_token.authorization_header(
+      http_method: 'POST'
+      fully_qualified_url: 'https://example/path',
+      request_params: {
+        sort: 'asc',
+        field: ['name', 'desc'] # sending the field multiple times
+      }
+    )
+
+PUT with no request parameters (entity body)
+
+    authz_header = access_token.authorization_header(
+      http_method: 'PUT'
+      fully_qualified_url: 'https://example/path'
+    )
+
 ### Access Token Reuse
+
 Generally, you'll want to use an Access Token more than once. Access Tokens can be reused, but
 they do expire, so you'll need to acquire new tokens after one expires. All of the expiration
 information is contained in the AccessToken class and you can easily determine if a token is
@@ -76,6 +122,21 @@ implement that:
     # Optionally, extract additional parameters sent with the token, such as Consumer.Principal
     # (xoauth_principal)
     consumer_principal = access_token.consumer_principal
+
+### Service Provider HMAC-SHA1 Signature Method
+
+The preferred and default signature method is PLAINTEXT, as all communication SHOULD be via TLS. However, if HMAC-SHA1 signatures are necessary, then this can be achieved by passing additional informational to the `authenticate` method.
+
+    begin
+      results = access_token.authenticate(
+        agent,
+        http_method: request.method,
+        fully_qualified_url: request.original_url,
+        request_params: request.parameters
+      )
+    rescue OAuthError => e
+      # respond with a 401
+    end
 
 ## Caching
 
