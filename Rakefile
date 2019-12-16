@@ -18,3 +18,5 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_dir = 'build/doc'
   rdoc.rdoc_files.include('lib/')
 end
+
+task(default: [:build])
