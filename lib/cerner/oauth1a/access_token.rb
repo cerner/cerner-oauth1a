@@ -174,11 +174,7 @@ module Cerner
       # Raises Cerner::OAuth1a::OAuthError if #signature_method is not PLAINTEXT or if a signature
       # can't be determined.
       def authorization_header(
-        nonce: nil,
-        timestamp: nil,
-        http_method: 'GET',
-        fully_qualified_url: nil,
-        request_params: nil
+        nonce: nil, timestamp: nil, http_method: 'GET', fully_qualified_url: nil, request_params: nil
       )
         oauth_params = {}
         oauth_params[:oauth_version] = '1.0'
@@ -197,10 +193,8 @@ module Cerner
           raise OAuthError.new('token_secret is nil', nil, 'parameter_absent', nil, @realm) unless @token_secret
 
           if @signature_method == 'PLAINTEXT'
-            sig = Signature.sign_via_plaintext(
-              client_shared_secret: @accessor_secret,
-              token_shared_secret: @token_secret
-            )
+            sig =
+              Signature.sign_via_plaintext(client_shared_secret: @accessor_secret, token_shared_secret: @token_secret)
           elsif @signature_method == 'HMAC-SHA1'
             http_method ||= 'GET' # default to HTTP GET
             request_params ||= {} # default to no request params
@@ -217,17 +211,17 @@ module Cerner
             request_params = query_params.merge(request_params)
 
             params = request_params.merge(oauth_params)
-            signature_base_string = Signature.build_signature_base_string(
-              http_method: http_method,
-              fully_qualified_url: fully_qualified_url,
-              params: params
-            )
+            signature_base_string =
+              Signature.build_signature_base_string(
+                http_method: http_method, fully_qualified_url: fully_qualified_url, params: params
+              )
 
-            sig = Signature.sign_via_hmacsha1(
-              client_shared_secret: @accessor_secret,
-              token_shared_secret: @token_secret,
-              signature_base_string: signature_base_string
-            )
+            sig =
+              Signature.sign_via_hmacsha1(
+                client_shared_secret: @accessor_secret,
+                token_shared_secret: @token_secret,
+                signature_base_string: signature_base_string
+              )
           else
             raise OAuthError.new('signature_method is invalid', nil, 'signature_method_rejected', nil, @realm)
           end
@@ -374,13 +368,7 @@ module Cerner
       # Internal: Used by #authenticate to verify the expiration time.
       def verify_expiration(expires_on)
         unless expires_on
-          raise OAuthError.new(
-            'token missing ExpiresOn',
-            nil,
-            'oauth_parameters_rejected',
-            'oauth_token',
-            @realm
-          )
+          raise OAuthError.new('token missing ExpiresOn', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
         end
 
         expires_on = Internal.convert_to_time(time: expires_on, name: 'expires_on')
@@ -416,13 +404,7 @@ module Cerner
       end
 
       # Internal: Used by #authenticate to verify the request signature.
-      def verify_signature(
-        keys:,
-        hmac_secrets:,
-        http_method:,
-        fully_qualified_url:,
-        request_params:
-      )
+      def verify_signature(keys:, hmac_secrets:, http_method:, fully_qualified_url:, request_params:)
         unless @signature
           raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature', @realm)
         end
@@ -445,10 +427,10 @@ module Cerner
         secrets_parts = Protocol.parse_url_query_string(secrets)
 
         if @signature_method == 'PLAINTEXT'
-          expected_signature = Signature.sign_via_plaintext(
-            client_shared_secret: secrets_parts[:ConsumerSecret],
-            token_shared_secret: secrets_parts[:TokenSecret]
-          )
+          expected_signature =
+            Signature.sign_via_plaintext(
+              client_shared_secret: secrets_parts[:ConsumerSecret], token_shared_secret: secrets_parts[:TokenSecret]
+            )
         elsif @signature_method == 'HMAC-SHA1'
           http_method ||= 'GET' # default to HTTP GET
           request_params ||= {} # default to no request params
@@ -471,17 +453,17 @@ module Cerner
           request_params = query_params.merge(request_params)
 
           params = request_params.merge(oauth_params)
-          signature_base_string = Signature.build_signature_base_string(
-            http_method: http_method,
-            fully_qualified_url: fully_qualified_url,
-            params: params
-          )
+          signature_base_string =
+            Signature.build_signature_base_string(
+              http_method: http_method, fully_qualified_url: fully_qualified_url, params: params
+            )
 
-          expected_signature = Signature.sign_via_hmacsha1(
-            client_shared_secret: secrets_parts[:ConsumerSecret],
-            token_shared_secret: secrets_parts[:TokenSecret],
-            signature_base_string: signature_base_string
-          )
+          expected_signature =
+            Signature.sign_via_hmacsha1(
+              client_shared_secret: secrets_parts[:ConsumerSecret],
+              token_shared_secret: secrets_parts[:TokenSecret],
+              signature_base_string: signature_base_string
+            )
         else
           raise OAuthError.new(
             'signature_method must be PLAINTEXT or HMAC-SHA1',

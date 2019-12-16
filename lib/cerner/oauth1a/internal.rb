@@ -17,11 +17,7 @@ module Cerner
       def self.convert_to_time(time:, name: 'time')
         raise ArgumentError, "#{name} is nil" unless time
 
-        if time.is_a?(Time)
-          time.utc
-        else
-          Time.at(time.to_i).utc
-        end
+        time.is_a?(Time) ? time.utc : Time.at(time.to_i).utc
       end
 
       # Internal: Convert an fully qualified URL String into a URI with some verification checks

@@ -155,6 +155,7 @@ module Cerner
       # Raises StandardError sub-classes for any issues interacting with the service, such as networking issues.
       def retrieve(principal: nil, ignore_cache: false)
         cache_key = "#{@consumer_key}&#{principal}"
+
         if @access_token_cache && !ignore_cache
           cache_entry = @access_token_cache.get('cerner-oauth1a/access-tokens', cache_key)
           return cache_entry.value if cache_entry
@@ -166,11 +167,8 @@ module Cerner
 
         request = retrieve_prepare_request(timestamp: timestamp, accessor_secret: accessor_secret, principal: principal)
         response = http_client.request(request)
-        access_token = retrieve_handle_response(
-          response: response,
-          timestamp: timestamp,
-          accessor_secret: accessor_secret
-        )
+        access_token =
+          retrieve_handle_response(response: response, timestamp: timestamp, accessor_secret: accessor_secret)
         @access_token_cache&.put('cerner-oauth1a/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
         access_token
       end
@@ -249,23 +247,20 @@ module Cerner
         params[:xoauth_principal] = principal.to_s if principal
 
         if @signature_method == 'PLAINTEXT'
-          sig = Signature.sign_via_plaintext(
-            client_shared_secret: @consumer_secret,
-            token_shared_secret: ''
-          )
+          sig = Signature.sign_via_plaintext(client_shared_secret: @consumer_secret, token_shared_secret: '')
         elsif @signature_method == 'HMAC-SHA1'
           params[:oauth_timestamp] = timestamp
           params[:oauth_nonce] = generate_nonce
-          signature_base_string = Signature.build_signature_base_string(
-            http_method: 'POST',
-            fully_qualified_url: @access_token_url,
-            params: params
-          )
-          sig = Signature.sign_via_hmacsha1(
-            client_shared_secret: @consumer_secret,
-            token_shared_secret: '',
-            signature_base_string: signature_base_string
-          )
+          signature_base_string =
+            Signature.build_signature_base_string(
+              http_method: 'POST', fully_qualified_url: @access_token_url, params: params
+            )
+          sig =
+            Signature.sign_via_hmacsha1(
+              client_shared_secret: @consumer_secret,
+              token_shared_secret: '',
+              signature_base_string: signature_base_string
+            )
         else
           raise OAuthError.new('signature_method is invalid', nil, 'signature_method_rejected', nil, @realm)
         end
@@ -288,15 +283,16 @@ module Cerner
           # Parse the HTTP response and convert it into a Symbol-keyed Hash
           tuples = Protocol.parse_url_query_string(response.body)
           # Use the parsed response to construct the AccessToken
-          access_token = AccessToken.new(
-            accessor_secret: accessor_secret,
-            consumer_key: @consumer_key,
-            expires_at: timestamp + tuples[:oauth_expires_in].to_i,
-            token: tuples[:oauth_token],
-            token_secret: tuples[:oauth_token_secret],
-            signature_method: @signature_method,
-            realm: @realm
-          )
+          access_token =
+            AccessToken.new(
+              accessor_secret: accessor_secret,
+              consumer_key: @consumer_key,
+              expires_at: timestamp + tuples[:oauth_expires_in].to_i,
+              token: tuples[:oauth_token],
+              token_secret: tuples[:oauth_token_secret],
+              signature_method: @signature_method,
+              realm: @realm
+            )
           access_token
         else
           # Extract any OAuth Problems reported in the response
@@ -328,9 +324,7 @@ module Cerner
           raise OAuthError.new('RSA public key retrieved was invalid', nil, nil, nil, @realm) unless rsa_key
 
           Keys.new(
-            version: keys_version,
-            aes_secret_key: Base64.decode64(aes_key),
-            rsa_public_key: Base64.decode64(rsa_key)
+            version: keys_version, aes_secret_key: Base64.decode64(aes_key), rsa_public_key: Base64.decode64(rsa_key)
           )
         else
           # Extract any OAuth Problems reported in the response

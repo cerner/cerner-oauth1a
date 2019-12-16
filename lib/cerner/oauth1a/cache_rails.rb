@@ -28,13 +28,7 @@ module Cerner
       # key       - The key for the cache entries, which is qualified by namespace.
       # entry     - The entry to be stored in the cache.
       def put(namespace, key, entry)
-        @cache.write(
-          key,
-          entry,
-          namespace: namespace,
-          expires_in: entry.expires_in,
-          race_condition_ttl: 5
-        )
+        @cache.write(key, entry, namespace: namespace, expires_in: entry.expires_in, race_condition_ttl: 5)
       end
 
       # Internal: Retrieves the entry, if available, from the cache store.

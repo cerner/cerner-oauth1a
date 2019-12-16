@@ -10,9 +10,7 @@ module Cerner
       def self.instance=(cache_impl)
         raise ArgumentError, 'cache_impl must not be nil' unless cache_impl
 
-        @cache_instance_lock.synchronize do
-          @cache_instance = cache_impl
-        end
+        @cache_instance_lock.synchronize { @cache_instance = cache_impl }
       end
 
       # Internal: Gets the singleton instance.
@@ -62,7 +60,7 @@ module Cerner
         end
       end
 
-      ONE_HOUR = 3600
+      ONE_HOUR = 3_600
       TWENTY_FOUR_HOURS = 24 * ONE_HOUR
 
       # Internal: The default implementation of the Cerner::OAuth1a::Cache interface.
