@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
+require 'cerner/oauth1a/internal'
 require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/protocol'
+require 'cerner/oauth1a/signature'
 require 'uri'
 
 module Cerner
@@ -38,6 +40,7 @@ module Cerner
         raise OAuthError.new('', nil, 'parameter_absent', missing_params) unless missing_params.empty?
 
         AccessToken.new(
+          accessor_secret: params[:oauth_accessor_secret],
           consumer_key: consumer_key,
           nonce: params[:oauth_nonce],
           timestamp: params[:oauth_timestamp],
@@ -48,15 +51,18 @@ module Cerner
         )
       end
 
-      # Returns a String, but may be nil, with the Accessor Secret related to this token.
+      # Returns a String, but may be nil, with the Accessor Secret (oauth_accessor_secret) related
+      # to this token. Note: nil and empty are considered equivalent.
       attr_reader :accessor_secret
       # Returns a String with the Consumer Key (oauth_consumer_key) related to this token.
       attr_reader :consumer_key
       # Returns a Time, but may be nil, which represents the moment when this token expires.
       attr_reader :expires_at
-      # Returns a String, but may be nil, with the Nonce (oauth_nonce) related to this token.
+      # Returns a String, but may be nil, with the Nonce (oauth_nonce) related to this token. This
+      # is generally only populated when parsing a token for authentication.
       attr_reader :nonce
-      # Returns a Time, but may be nil, which represents the moment when this token was created (oauth_timestamp).
+      # Returns a Time, but may be nil, with the Timestamp (oauth_timestamp) related to this token.
+      # This is generally only populated when parsing a token for authentication.
       attr_reader :timestamp
       # Returns a String with the Token (oauth_token).
       attr_reader :token
@@ -86,7 +92,7 @@ module Cerner
       #                                 object responding to to_i that represents the creation
       #                                 moment as the number of seconds since the epoch.
       #             :token            - The required String representing the token.
-      #             :token_secret     - The required String representing the token secret.
+      #             :token_secret     - The optional String representing the token secret.
       #             :signature_method - The optional String representing the signature method.
       #                                 Defaults to PLAINTEXT.
       #             :signature        - The optional String representing the signature.
@@ -109,53 +115,128 @@ module Cerner
         raise ArgumentError, 'token is nil' unless token
 
         @accessor_secret = accessor_secret || nil
-        @authorization_header = nil
         @consumer_key = consumer_key
         @consumer_principal = nil
-        @expires_at = expires_at ? convert_to_time(expires_at) : nil
+        @expires_at = expires_at ? Internal.convert_to_time(time: expires_at, name: 'expires_at') : nil
         @nonce = nonce
         @signature = signature
         @signature_method = signature_method || 'PLAINTEXT'
-        @timestamp = timestamp ? convert_to_time(timestamp) : nil
+        @timestamp = timestamp ? Internal.convert_to_time(time: timestamp, name: 'timestamp') : nil
         @token = token
         @token_secret = token_secret || nil
         @realm = realm || nil
       end
 
       # Public: Generates a value suitable for use as an HTTP Authorization header. If #signature is
-      # nil, then #accessor_secret and #token_secret will be used to build a signature via the
-      # PLAINTEXT method.
+      # nil, then a signature will be generated based on the #signature_method.
+      #
+      # PLAINTEXT Signature (preferred)
+      #
+      # When using PLAINTEXT signatures, no additional arguments are necessary. If an oauth_nonce
+      # or oauth_timestamp are desired, then the values can be passed via the :nonce and :timestamp
+      # keyword arguments. The actual signature will be constructed from the Accessor Secret
+      # (#accessor_secret) and the Token Secret (#token_secret).
+      #
+      # HMAC-SHA1 Signature
+      #
+      # When using HMAC-SHA1 signatures, access to the HTTP request information is necessary. This
+      # requies that additional information is passed via the keyword arguments. The required
+      # information includes the HTTP method (see :http_method), the host authority & path (see
+      # :fully_qualified_url) and the request parameters (see :fully_qualified_url and
+      # :request_params).
+      #
+      # keywords - The keyword arguments:
+      #            :nonce               - The optional String containing a Nonce to generate the
+      #                                   header with HMAC-SHA1 signatures. When nil, a Nonce will
+      #                                   be generated.
+      #            :timestamp           - The optional Time or #to_i compliant object containing a
+      #                                   Timestamp to generate the header with HMAC-SHA1
+      #                                   signatures. When nil, a Timestamp will be generated.
+      #            :http_method         - The optional String or Symbol containing a HTTP Method for
+      #                                   constructing the HMAC-SHA1 signature. When nil, the value
+      #                                   defualts to 'GET'.
+      #            :fully_qualified_url - The optional String or URI containing the fully qualified
+      #                                   URL of the HTTP API being invoked for constructing the
+      #                                   HMAC-SHA1 signature. If the URL contains a query string,
+      #                                   the parameters will be extracted and used in addition to
+      #                                   the :request_params keyword argument.
+      #            :request_params      - The optional Hash of name/value pairs containing the
+      #                                   request parameters of the HTTP API being invoked for
+      #                                   constructing the HMAC-SHA1 signature. Parameters passed
+      #                                   here will override and augment those passed in the
+      #                                   :fully_qualified_url parameter. The parameter names and
+      #                                   values MUST be unencoded. See
+      #                                   Protocol#parse_url_query_string for help with decoding an
+      #                                   encoded query string.
       #
       # Returns a String representation of the access token.
       #
       # Raises Cerner::OAuth1a::OAuthError if #signature_method is not PLAINTEXT or if a signature
       # can't be determined.
-      def authorization_header
-        return @authorization_header if @authorization_header
-
-        unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
-        end
+      def authorization_header(
+        nonce: nil,
+        timestamp: nil,
+        http_method: 'GET',
+        fully_qualified_url: nil,
+        request_params: nil
+      )
+        oauth_params = {}
+        oauth_params[:oauth_version] = '1.0'
+        oauth_params[:oauth_signature_method] = @signature_method
+        oauth_params[:oauth_consumer_key] = @consumer_key
+        oauth_params[:oauth_nonce] = nonce if nonce
+        oauth_params[:oauth_timestamp] = Internal.convert_to_time(time: timestamp, name: 'timestamp').to_i if timestamp
+        oauth_params[:oauth_token] = @token
 
         if @signature
           sig = @signature
-        elsif @accessor_secret && @token_secret
-          sig = "#{@accessor_secret}&#{@token_secret}"
         else
-          raise OAuthError.new('accessor_secret or token_secret is nil', nil, 'parameter_absent', nil, @realm)
+          # NOTE: @accessor_secret is always used, but an empty value is allowed and project assumes
+          # that nil implies an empty value
+
+          raise OAuthError.new('token_secret is nil', nil, 'parameter_absent', nil, @realm) unless @token_secret
+
+          if @signature_method == 'PLAINTEXT'
+            sig = Signature.sign_via_plaintext(
+              client_shared_secret: @accessor_secret,
+              token_shared_secret: @token_secret
+            )
+          elsif @signature_method == 'HMAC-SHA1'
+            http_method ||= 'GET' # default to HTTP GET
+            request_params ||= {} # default to no request params
+            oauth_params[:oauth_nonce] = Internal.generate_nonce unless oauth_params[:oauth_nonce]
+            oauth_params[:oauth_timestamp] = Internal.generate_timestamp unless oauth_params[:oauth_timestamp]
+
+            begin
+              fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
+            rescue ArgumentError => ae
+              raise OAuthError.new(ae.message, nil, 'parameter_absent', nil, @realm)
+            end
+
+            query_params = fully_qualified_url.query ? Protocol.parse_url_query_string(fully_qualified_url.query) : {}
+            request_params = query_params.merge(request_params)
+
+            params = request_params.merge(oauth_params)
+            signature_base_string = Signature.build_signature_base_string(
+              http_method: http_method,
+              fully_qualified_url: fully_qualified_url,
+              params: params
+            )
+
+            sig = Signature.sign_via_hmacsha1(
+              client_shared_secret: @accessor_secret,
+              token_shared_secret: @token_secret,
+              signature_base_string: signature_base_string
+            )
+          else
+            raise OAuthError.new('signature_method is invalid', nil, 'signature_method_rejected', nil, @realm)
+          end
         end
 
-        tuples = {}
-        tuples[:realm] = @realm if @realm
-        tuples[:oauth_version] = '1.0'
-        tuples[:oauth_signature_method] = @signature_method
-        tuples[:oauth_signature] = sig
-        tuples[:oauth_consumer_key] = @consumer_key
-        tuples[:oauth_nonce] = @nonce if @nonce
-        tuples[:oauth_timestamp] = @timestamp.tv_sec if @timestamp
-        tuples[:oauth_token] = @token
+        oauth_params[:realm] = @realm if @realm
+        oauth_params[:oauth_signature] = sig
 
-        @authorization_header = Protocol.generate_authorization_header(tuples)
+        Protocol.generate_authorization_header(oauth_params)
       end
 
       # Public: Authenticates the #token against the #consumer_key, #signature and side-channel
@@ -166,13 +247,27 @@ module Cerner
       # access_token_agent - An instance of Cerner::OAuth1a::AccessTokenAgent configured with
       #                      appropriate credentials to retrieve secrets via
       #                      Cerner::OAuth1a::AccessTokenAgent#retrieve_keys.
+      # keywords           - The keyword arguments:
+      #                      :http_method         - An optional String or Symbol containing an HTTP
+      #                                             method name. (default: 'GET')
+      #                      :fully_qualified_url - An optional String or URI that contains the
+      #                                             scheme, host, port (optional) and path of a URL.
+      #                      :request_params      - An optional Hash of name/value pairs
+      #                                             representing the request parameters. The keys
+      #                                             and values  of the Hash will be assumed to be
+      #                                             represented by the value returned from #to_s.
       #
       # Returns a Hash (symbolized keys) of any extra parameters within #token (oauth_token),
       # if authentication succeeds. In most scenarios, the Hash will be empty.
       #
       # Raises ArgumentError if access_token_agent is nil
       # Raises Cerner::OAuth1a::OAuthError with an oauth_problem if authentication fails.
-      def authenticate(access_token_agent)
+      def authenticate(
+        access_token_agent,
+        http_method: 'GET',
+        fully_qualified_url: nil,
+        request_params: nil
+      )
         raise ArgumentError, 'access_token_agent is nil' unless access_token_agent
 
         if @realm && !access_token_agent.realm_eql?(@realm)
@@ -181,10 +276,6 @@ module Cerner
 
         # Set realm to the provider's realm if it's not already set
         @realm ||= access_token_agent.realm
-
-        unless @signature_method == 'PLAINTEXT'
-          raise OAuthError.new('signature_method must be PLAINTEXT', nil, 'signature_method_rejected', nil, @realm)
-        end
 
         tuples = Protocol.parse_url_query_string(@token)
 
@@ -200,7 +291,13 @@ module Cerner
         # RSASHA1 param gets consumed in #verify_token, so remove it too
         tuples.delete(:RSASHA1)
 
-        verify_signature(keys, tuples.delete(:HMACSecrets))
+        verify_signature(
+          keys: keys,
+          hmac_secrets: tuples.delete(:HMACSecrets),
+          http_method: http_method,
+          fully_qualified_url: fully_qualified_url,
+          request_params: request_params
+        )
 
         @consumer_principal = tuples.delete(:"Consumer.Principal")
 
@@ -222,7 +319,7 @@ module Cerner
         # if @expires_at is nil, return true now
         return true unless @expires_at
 
-        now = convert_to_time(now)
+        now = Internal.convert_to_time(time: now, name: 'now')
         now.tv_sec >= @expires_at.tv_sec - fudge_sec
       end
 
@@ -274,26 +371,7 @@ module Cerner
 
       private
 
-      # Internal: Used by #initialize and #expired? to convert data into a Time instance.
-      #
-      # time - Time or any object with a #to_i the returns an Integer.
-      #
-      # Returns a Time instance in the UTC time zone.
-      def convert_to_time(time)
-        raise ArgumentError, 'time is nil' unless time
-
-        if time.is_a?(Time)
-          time.utc
-        else
-          Time.at(time.to_i).utc
-        end
-      end
-
       # Internal: Used by #authenticate to verify the expiration time.
-      #
-      # expires_on - The ExpiresOn parameter of oauth_token
-      #
-      # Raises OAuthError if the parameter is invalid or expired
       def verify_expiration(expires_on)
         unless expires_on
           raise OAuthError.new(
@@ -305,12 +383,13 @@ module Cerner
           )
         end
 
-        expires_on = convert_to_time(expires_on)
-        now = convert_to_time(Time.now)
+        expires_on = Internal.convert_to_time(time: expires_on, name: 'expires_on')
+        now = Internal.convert_to_time(time: Time.now)
 
         raise OAuthError.new('token has expired', nil, 'token_expired', nil, @realm) if now.tv_sec >= expires_on.tv_sec
       end
 
+      # Internal: Used by #authenticate to load the keys
       def load_keys(access_token_agent, keys_version)
         unless keys_version
           raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
@@ -330,24 +409,20 @@ module Cerner
       end
 
       # Internal: Used by #authenticate to verify the oauth_token value.
-      #
-      # keys - The Keys instance that contains the key used to sign the oauth_token
-      #
-      # Raises OAuthError if the parameter is not authentic
       def verify_token(keys)
-        unless keys.verify_rsasha1_signature(@token)
-          raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
-        end
+        return if keys.verify_rsasha1_signature(@token)
+
+        raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
       end
 
       # Internal: Used by #authenticate to verify the request signature.
-      #
-      # keys         - The Keys instance that contains the key used to encrypt the HMACSecrets
-      # hmac_secrets - The HMACSecrets parameter of oauth_token
-      #
-      # Raises OAuthError if there is no signature, the parameter is invalid or the signature does
-      # not match the secrets
-      def verify_signature(keys, hmac_secrets)
+      def verify_signature(
+        keys:,
+        hmac_secrets:,
+        http_method:,
+        fully_qualified_url:,
+        request_params:
+      )
         unless @signature
           raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature', @realm)
         end
@@ -368,11 +443,58 @@ module Cerner
         end
 
         secrets_parts = Protocol.parse_url_query_string(secrets)
-        expected_signature = "#{secrets_parts[:ConsumerSecret]}&#{secrets_parts[:TokenSecret]}"
 
-        unless @signature == expected_signature
-          raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
+        if @signature_method == 'PLAINTEXT'
+          expected_signature = Signature.sign_via_plaintext(
+            client_shared_secret: secrets_parts[:ConsumerSecret],
+            token_shared_secret: secrets_parts[:TokenSecret]
+          )
+        elsif @signature_method == 'HMAC-SHA1'
+          http_method ||= 'GET' # default to HTTP GET
+          request_params ||= {} # default to no request params
+          oauth_params = {
+            oauth_version: '1.0', # assumes version is present
+            oauth_signature_method: 'HMAC-SHA1',
+            oauth_consumer_key: @consumer_key,
+            oauth_nonce: @nonce,
+            oauth_timestamp: @timestamp.to_i,
+            oauth_token: @token
+          }
+
+          begin
+            fully_qualified_url = Internal.convert_to_http_uri(url: fully_qualified_url, name: 'fully_qualified_url')
+          rescue ArgumentError => ae
+            raise OAuthError.new(ae.message, nil, 'parameter_absent', nil, @realm)
+          end
+
+          query_params = fully_qualified_url.query ? Protocol.parse_url_query_string(fully_qualified_url.query) : {}
+          request_params = query_params.merge(request_params)
+
+          params = request_params.merge(oauth_params)
+          signature_base_string = Signature.build_signature_base_string(
+            http_method: http_method,
+            fully_qualified_url: fully_qualified_url,
+            params: params
+          )
+
+          expected_signature = Signature.sign_via_hmacsha1(
+            client_shared_secret: secrets_parts[:ConsumerSecret],
+            token_shared_secret: secrets_parts[:TokenSecret],
+            signature_base_string: signature_base_string
+          )
+        else
+          raise OAuthError.new(
+            'signature_method must be PLAINTEXT or HMAC-SHA1',
+            nil,
+            'signature_method_rejected',
+            nil,
+            @realm
+          )
         end
+
+        return if @signature == expected_signature
+
+        raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
       end
     end
   end

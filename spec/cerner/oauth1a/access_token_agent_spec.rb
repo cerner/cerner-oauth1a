@@ -209,7 +209,7 @@ RSpec.describe(Cerner::OAuth1a::AccessTokenAgent) do
             response: {
               status: 401,
               content_type: 'text/plain',
-              www_authenticate: 'OAuth realm="http://Flocalhost", oauth_problem="token_rejected"',
+              www_authenticate: 'OAuth realm="http://localhost", oauth_problem="token_rejected"',
               body: 'TOKEN REJECTED'
             }
           }
@@ -228,6 +228,21 @@ RSpec.describe(Cerner::OAuth1a::AccessTokenAgent) do
         consumer_key: 'CONSUMER KEY',
         consumer_secret: 'CONSUMER SECRET',
         cache_access_tokens: false
+      )
+      access_token = agent.retrieve
+      expect(access_token.consumer_key).to(eq('CONSUMER KEY'))
+      expect(access_token.token).to(eq('TOKEN'))
+      expect(access_token.token_secret).to(eq('TOKEN SECRET'))
+      expect(access_token.realm).to(eq(@server.base_uri))
+    end
+
+    it 'gets a valid access token with HMAC-SHA1 signature' do
+      agent = Cerner::OAuth1a::AccessTokenAgent.new(
+        access_token_url: "#{@server.base_uri}/oauth/access_success",
+        consumer_key: 'CONSUMER KEY',
+        consumer_secret: 'CONSUMER SECRET',
+        cache_access_tokens: false,
+        signature_method: 'HMAC-SHA1'
       )
       access_token = agent.retrieve
       expect(access_token.consumer_key).to(eq('CONSUMER KEY'))
@@ -371,6 +386,17 @@ RSpec.describe(Cerner::OAuth1a::AccessTokenAgent) do
           consumer_secret: 'SECRET'
         )
       end.to(raise_error(ArgumentError, /access_token_url/))
+    end
+
+    it 'requires a valid signature_method' do
+      expect do
+        Cerner::OAuth1a::AccessTokenAgent.new(
+          access_token_url: 'http://localhost/oauth/access',
+          consumer_key: 'KEY',
+          consumer_secret: 'SECRET',
+          signature_method: 'REJECT THIS'
+        )
+      end.to(raise_error(ArgumentError, /signature_method/))
     end
 
     it 'sets the realm from the canonical root URI of the access_token_url with default http port' do

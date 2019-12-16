@@ -85,7 +85,7 @@ module Cerner
       #
       # Returns the String containing the generated value or nil if params is nil or empty.
       def self.generate_authorization_header(params)
-        return nil unless params && !params.empty?
+        return unless params && !params.empty?
 
         realm = "realm=\"#{params.delete(:realm)}\"" if params[:realm]
         realm += ',' if realm && !params.empty?

@@ -40,7 +40,8 @@ RSpec.describe(Cerner::OAuth1a::Keys) do
 
     context 'returns true' do
       it 'when compared to self' do
-        expect(keys == keys).to(be(true))
+        local_keys = keys
+        expect(keys == local_keys).to(be(true))
         expect(keys.eql?(keys)).to(be(true))
       end
 

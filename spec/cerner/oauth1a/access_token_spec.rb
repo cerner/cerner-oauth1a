@@ -117,16 +117,25 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         end)
       end
 
-      it 'when signature_method is not PLAINTEXT' do
+      it 'when signature_method is not valid' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: 'TOKEN',
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          signature: 'SIGNATURE',
           signature_method: 'REJECT_THIS',
           realm: 'REALM'
         )
+        keys = double('Keys')
+        expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
+        expect(keys).to(
+          receive(:decrypt_hmac_secrets)
+            .with('SECRETS')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
+        )
         ata = double('AccessTokenAgent')
+        expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
         expect(ata).to(receive(:realm_eql?).and_return(true))
         expect { at.authenticate(ata) }.to(raise_error do |error|
           expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
@@ -174,7 +183,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i - 60}",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -191,7 +200,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -208,7 +217,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=2",
           realm: 'REALM'
         )
         ata = double('AccessTokenAgent')
@@ -228,7 +237,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           realm: 'REALM'
         )
         keys = double('Keys')
@@ -248,7 +257,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           realm: 'REALM'
         )
         keys = double('Keys')
@@ -268,7 +277,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -289,7 +298,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -311,7 +320,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
           signature: 'SIGNATURE',
           realm: 'REALM'
         )
@@ -320,7 +329,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -334,20 +343,20 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     end
 
     context 'returns Hash' do
-      it 'that is empty' do
+      it 'with PLAINTEXT signature' do
         at = Cerner::OAuth1a::AccessToken.new(
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -355,24 +364,66 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect(at.authenticate(ata)).to(eq({}))
       end
 
-      it 'with Consumer.Principal' do
-        at = Cerner::OAuth1a::AccessToken.new(
-          consumer_key: 'CONSUMER KEY',
-          nonce: 'NONCE',
-          timestamp: Time.now,
-          token: 'Consumer.Principal=CONSUMER+PRINCIPAL&' \
-            'ConsumerKey=CONSUMER+KEY&' \
-            'Extra=SOMETHING&' \
+      it 'with HMAC-SHA1 signature' do
+        params = {
+          oauth_version: '1.0',
+          oauth_consumer_key: 'CONSUMER KEY',
+          oauth_nonce: 'NONCE',
+          oauth_timestamp: Time.now.to_i.to_s,
+          oauth_token: 'ConsumerKey=CONSUMER%20KEY&' \
             "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
             'KeysVersion=1&HMACSecrets=SECRETS',
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          oauth_signature_method: 'HMAC-SHA1'
+        }
+        sbs = Cerner::OAuth1a::Signature.build_signature_base_string(
+          http_method: 'GET',
+          fully_qualified_url: 'https://example/path',
+          params: params
+        )
+        sig = Cerner::OAuth1a::Signature.sign_via_hmacsha1(
+          client_shared_secret: '',
+          token_shared_secret: '',
+          signature_base_string: sbs
+        )
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: params[:oauth_consumer_key],
+          nonce: params[:oauth_nonce],
+          timestamp: params[:oauth_timestamp],
+          token: params[:oauth_token],
+          signature_method: params[:oauth_signature_method],
+          signature: sig
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=&TokenSecret=')
+        )
+        ata = double('AccessTokenAgent')
+        expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
+        expect(ata).to(receive(:realm).and_return('REALM'))
+        expect(at.authenticate(ata, fully_qualified_url: 'https://example/path')).to(eq({}))
+      end
+
+      it 'and populates consumer_principal' do
+        at = Cerner::OAuth1a::AccessToken.new(
+          consumer_key: 'CONSUMER KEY',
+          nonce: 'NONCE',
+          timestamp: Time.now,
+          token: 'Consumer.Principal=CONSUMER+PRINCIPAL&' \
+            'ConsumerKey=CONSUMER%20KEY&' \
+            'Extra=SOMETHING&' \
+            "ExpiresOn=#{Time.now.utc.to_i + 60}&" \
+            'KeysVersion=1&HMACSecrets=SECRETS',
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
+        )
+        keys = double('Keys')
+        expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
+        expect(keys).to(
+          receive(:decrypt_hmac_secrets)
+            .with('SECRETS')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -389,15 +440,15 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
           consumer_key: 'CONSUMER KEY',
           nonce: 'NONCE',
           timestamp: Time.now,
-          token: "ConsumerKey=CONSUMER+KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
-          signature: 'CONSUMER SECRET&TOKEN SECRET'
+          token: "ConsumerKey=CONSUMER%20KEY&ExpiresOn=#{Time.now.utc.to_i + 60}&KeysVersion=1&HMACSecrets=SECRETS",
+          signature: 'CONSUMER%20SECRET&TOKEN%20SECRET'
         )
         keys = double('Keys')
         expect(keys).to(receive(:verify_rsasha1_signature).and_return(true))
         expect(keys).to(
           receive(:decrypt_hmac_secrets)
             .with('SECRETS')
-            .and_return('ConsumerSecret=CONSUMER+SECRET&TokenSecret=TOKEN+SECRET')
+            .and_return('ConsumerSecret=CONSUMER%20SECRET&TokenSecret=TOKEN%20SECRET')
         )
         ata = double('AccessTokenAgent')
         expect(ata).to(receive(:retrieve_keys).with('1').and_return(keys))
@@ -451,7 +502,8 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
 
     context 'returns true' do
       it 'when compared to self' do
-        expect(access_token == access_token).to(be(true))
+        local_access_token = access_token
+        expect(access_token == local_access_token).to(be(true))
         expect(access_token.eql?(access_token)).to(be(true))
       end
 
@@ -623,7 +675,7 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     end
 
     context 'raises error' do
-      it 'when signature_method is not PLAINTEXT' do
+      it 'when signature_method is not valid' do
         at = Cerner::OAuth1a::AccessToken.new(
           accessor_secret: 'ACCESSOR SECRET',
           consumer_key: 'CONSUMER KEY',
@@ -638,24 +690,6 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
         expect { at.authorization_header }.to(raise_error do |error|
           expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
           expect(error.message).to(include('signature_method_rejected'))
-          expect(error.realm).to(eq('REALM'))
-        end)
-      end
-
-      it 'when signature is calculated and accessor_secret is nil' do
-        at = Cerner::OAuth1a::AccessToken.new(
-          accessor_secret: nil,
-          consumer_key: 'CONSUMER KEY',
-          expires_at: expires_at,
-          nonce: 'NONCE',
-          timestamp: current_time,
-          token: 'TOKEN',
-          token_secret: 'TOKEN SECRET',
-          realm: 'REALM'
-        )
-        expect { at.authorization_header }.to(raise_error do |error|
-          expect(error).to(be_a(Cerner::OAuth1a::OAuthError))
-          expect(error.message).to(include('parameter_absent'))
           expect(error.realm).to(eq('REALM'))
         end)
       end
@@ -681,11 +715,11 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
     it 'contains oauth_ parts' do
       expect(access_token.authorization_header).to(include('oauth_version="1.0"'))
       expect(access_token.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
-      expect(access_token.authorization_header).to(include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"'))
+      expect(access_token.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
       expect(access_token.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
-      expect(access_token.authorization_header).to(include('oauth_nonce="NONCE"'))
+      expect(access_token.authorization_header).not_to(include('oauth_nonce="NONCE"'))
       expect(access_token.authorization_header).to(include('oauth_token="TOKEN"'))
-      expect(access_token.authorization_header).to(match(/oauth_timestamp="\d+"/))
+      expect(access_token.authorization_header).not_to(match(/oauth_timestamp="\d+"/))
     end
 
     it 'contains populated parts' do
@@ -698,7 +732,45 @@ RSpec.describe(Cerner::OAuth1a::AccessToken) do
       )
       expect(at.authorization_header).to(include('oauth_version="1.0"'))
       expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
-      expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%20SECRET%26TOKEN%20SECRET"'))
+      expect(at.authorization_header).to(include('oauth_signature="ACCESSOR%2520SECRET%26TOKEN%2520SECRET"'))
+      expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
+      expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
+      expect(at.authorization_header).not_to(include('oauth_nonce'))
+      expect(at.authorization_header).not_to(include('oauth_timestamp'))
+      expect(at.authorization_header).not_to(include('realm'))
+    end
+
+    it 'signs with HMAC-SHA1 method' do
+      at = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: '',
+        consumer_key: 'CONSUMER KEY',
+        expires_at: expires_at,
+        token: 'TOKEN',
+        token_secret: '',
+        signature_method: 'HMAC-SHA1'
+      )
+      authz_header = at.authorization_header(fully_qualified_url: 'http://example/path')
+      expect(authz_header).to(include('oauth_version="1.0"'))
+      expect(authz_header).to(include('oauth_signature_method="HMAC-SHA1"'))
+      expect(authz_header).to(match(/oauth_signature="[^\"]+"/))
+      expect(authz_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
+      expect(authz_header).to(include('oauth_token="TOKEN"'))
+      expect(authz_header).to(match(/oauth_timestamp="\d+"/))
+      expect(authz_header).to(match(/oauth_nonce="[^\"]+"/))
+      expect(authz_header).not_to(include('realm'))
+    end
+
+    it 'allows accessor_secret to be nil' do
+      at = Cerner::OAuth1a::AccessToken.new(
+        accessor_secret: nil,
+        consumer_key: 'CONSUMER KEY',
+        expires_at: expires_at,
+        token: 'TOKEN',
+        token_secret: 'TOKEN SECRET'
+      )
+      expect(at.authorization_header).to(include('oauth_version="1.0"'))
+      expect(at.authorization_header).to(include('oauth_signature_method="PLAINTEXT"'))
+      expect(at.authorization_header).to(include('oauth_signature="%26TOKEN%2520SECRET"'))
       expect(at.authorization_header).to(include('oauth_consumer_key="CONSUMER%20KEY"'))
       expect(at.authorization_header).to(include('oauth_token="TOKEN"'))
       expect(at.authorization_header).not_to(include('oauth_nonce'))

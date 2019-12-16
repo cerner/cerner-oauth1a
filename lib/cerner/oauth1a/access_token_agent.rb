@@ -5,10 +5,12 @@ require 'cerner/oauth1a/access_token'
 require 'cerner/oauth1a/keys'
 require 'cerner/oauth1a/oauth_error'
 require 'cerner/oauth1a/cache'
+require 'cerner/oauth1a/internal'
 require 'cerner/oauth1a/protocol'
+require 'cerner/oauth1a/signature'
 require 'cerner/oauth1a/version'
 require 'json'
-require 'net/https'
+require 'net/http'
 require 'securerandom'
 require 'uri'
 
@@ -70,9 +72,11 @@ module Cerner
       #                                    realm that's extracted from :access_token_url. If nil,
       #                                    this will be initalized with the DEFAULT_REALM_ALIASES.
       #                                    (optional, default: nil)
+      #             :signature_method    - A String to set the signature method to use. MUST be
+      #                                    PLAINTEXT or HMAC-SHA1. (optional, default: 'PLAINTEXT')
       #
       # Raises ArgumentError if access_token_url, consumer_key or consumer_key is nil; if
-      #                      access_token_url is an invalid URI.
+      #                      access_token_url is an invalid URI; if signature_method is invalid.
       def initialize(
         access_token_url:,
         consumer_key:,
@@ -81,7 +85,8 @@ module Cerner
         read_timeout: 5,
         cache_keys: true,
         cache_access_tokens: true,
-        realm_aliases: nil
+        realm_aliases: nil,
+        signature_method: 'PLAINTEXT'
       )
         raise ArgumentError, 'consumer_key is nil' unless consumer_key
         raise ArgumentError, 'consumer_secret is nil' unless consumer_secret
@@ -89,7 +94,7 @@ module Cerner
         @consumer_key = consumer_key
         @consumer_secret = consumer_secret
 
-        @access_token_url = convert_to_http_uri(access_token_url)
+        @access_token_url = Internal.convert_to_http_uri(url: access_token_url, name: 'access_token_url')
         @realm = Protocol.realm_for(@access_token_url)
         @realm_aliases = realm_aliases
         @realm_aliases ||= DEFAULT_REALM_ALIASES[@realm]
@@ -99,6 +104,9 @@ module Cerner
 
         @keys_cache = cache_keys ? Cache.instance : nil
         @access_token_cache = cache_access_tokens ? Cache.instance : nil
+
+        @signature_method = signature_method || 'PLAINTEXT'
+        raise ArgumentError, 'signature_method is invalid' unless Signature::METHODS.include?(@signature_method)
       end
 
       # Public: Retrieves the service provider keys from the configured Access Token service endpoint
@@ -107,7 +115,7 @@ module Cerner
       #
       # keys_version - The version identifier of the keys to retrieve. This corresponds to the
       #                KeysVersion parameter of the oauth_token.
-      # keywords     - The additional, optional keyword arguments for this method
+      # keywords     - The keyword arguments:
       #               :ignore_cache - A flag for indicating that the cache should be ignored and a
       #                               new Access Token should be retrieved.
       #
@@ -135,7 +143,7 @@ module Cerner
       # This method will use the #generate_accessor_secret, #generate_nonce and #generate_timestamp methods to
       # interact with the service, which can be overridden via a sub-class, if desired.
       #
-      # keywords - The additional, optional keyword arguments for this method
+      # keywords - The keyword arguments:
       #            :principal    - An optional principal identifier, which is passed via the
       #                            xoauth_principal protocol parameter.
       #            :ignore_cache - A flag for indicating that the cache should be ignored and a new
@@ -153,13 +161,16 @@ module Cerner
         end
 
         # generate token request info
-        nonce = generate_nonce
         timestamp = generate_timestamp
         accessor_secret = generate_accessor_secret
 
-        request = retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
+        request = retrieve_prepare_request(timestamp: timestamp, accessor_secret: accessor_secret, principal: principal)
         response = http_client.request(request)
-        access_token = retrieve_handle_response(response, timestamp, nonce, accessor_secret)
+        access_token = retrieve_handle_response(
+          response: response,
+          timestamp: timestamp,
+          accessor_secret: accessor_secret
+        )
         @access_token_cache&.put('cerner-oauth1a/access-tokens', cache_key, Cache::AccessTokenEntry.new(access_token))
         access_token
       end
@@ -175,14 +186,14 @@ module Cerner
       #
       # Returns a String containing the nonce.
       def generate_nonce
-        SecureRandom.hex
+        Internal.generate_nonce
       end
 
       # Public: Generate a Timestamp for invocations of the Access Token service.
       #
       # Returns an Integer representing the number of seconds since the epoch.
       def generate_timestamp
-        Time.now.to_i
+        Internal.generate_timestamp
       end
 
       # Public: Determines if the passed realm is equivalent to the configured
@@ -224,46 +235,44 @@ module Cerner
         http
       end
 
-      # Internal: Convert an Access Token URL into a URI with some verification checks
-      #
-      # access_token_url - A String URL or a URI instance
-      # Returns a URI::HTTP or URI::HTTPS
-      #
-      # Raises ArgumentError if access_token_url is nil, invalid or not an HTTP/HTTPS URI
-      def convert_to_http_uri(access_token_url)
-        raise ArgumentError, 'access_token_url is nil' unless access_token_url
-
-        if access_token_url.is_a?(URI)
-          uri = access_token_url
-        else
-          begin
-            uri = URI(access_token_url)
-          rescue URI::InvalidURIError
-            # raise argument error with cause
-            raise ArgumentError, 'access_token_url is invalid'
-          end
-        end
-
-        raise ArgumentError, 'access_token_url must be an HTTP or HTTPS URI' unless uri.is_a?(URI::HTTP)
-
-        uri
-      end
-
       # Internal: Prepare a request for #retrieve
-      def retrieve_prepare_request(timestamp, nonce, accessor_secret, principal)
+      def retrieve_prepare_request(accessor_secret:, timestamp:, principal: nil)
         # construct a POST request
         request = Net::HTTP::Post.new(@access_token_url)
         # setup the data to construct the POST's message
-        params = [
-          [:oauth_consumer_key, @consumer_key],
-          [:oauth_signature_method, 'PLAINTEXT'],
-          [:oauth_version, '1.0'],
-          [:oauth_timestamp, timestamp],
-          [:oauth_nonce, nonce],
-          [:oauth_signature, "#{@consumer_secret}&"],
-          [:oauth_accessor_secret, accessor_secret]
-        ]
-        params << [:xoauth_principal, principal.to_s] if principal
+        params = {
+          oauth_consumer_key: Protocol.percent_encode(@consumer_key),
+          oauth_signature_method: @signature_method,
+          oauth_version: '1.0',
+          oauth_accessor_secret: accessor_secret
+        }
+        params[:xoauth_principal] = principal.to_s if principal
+
+        if @signature_method == 'PLAINTEXT'
+          sig = Signature.sign_via_plaintext(
+            client_shared_secret: @consumer_secret,
+            token_shared_secret: ''
+          )
+        elsif @signature_method == 'HMAC-SHA1'
+          params[:oauth_timestamp] = timestamp
+          params[:oauth_nonce] = generate_nonce
+          signature_base_string = Signature.build_signature_base_string(
+            http_method: 'POST',
+            fully_qualified_url: @access_token_url,
+            params: params
+          )
+          sig = Signature.sign_via_hmacsha1(
+            client_shared_secret: @consumer_secret,
+            token_shared_secret: '',
+            signature_base_string: signature_base_string
+          )
+        else
+          raise OAuthError.new('signature_method is invalid', nil, 'signature_method_rejected', nil, @realm)
+        end
+
+        params[:oauth_signature] = sig
+
+        params = params.map { |n, v| [n, v] }
         # set the POST's body as a URL form-encoded string
         request.set_form(params, MIME_WWW_FORM_URL_ENCODED, charset: 'UTF-8')
         request['Accept'] = MIME_WWW_FORM_URL_ENCODED
@@ -273,7 +282,7 @@ module Cerner
       end
 
       # Internal: Handle a response for #retrieve
-      def retrieve_handle_response(response, timestamp, nonce, accessor_secret)
+      def retrieve_handle_response(response:, timestamp:, accessor_secret:)
         case response
         when Net::HTTPSuccess
           # Parse the HTTP response and convert it into a Symbol-keyed Hash
@@ -283,10 +292,9 @@ module Cerner
             accessor_secret: accessor_secret,
             consumer_key: @consumer_key,
             expires_at: timestamp + tuples[:oauth_expires_in].to_i,
-            nonce: nonce,
-            timestamp: timestamp,
             token: tuples[:oauth_token],
             token_secret: tuples[:oauth_token_secret],
+            signature_method: @signature_method,
             realm: @realm
           )
           access_token
@@ -300,10 +308,11 @@ module Cerner
 
       # Internal: Prepare a request for #retrieve_keys
       def retrieve_keys_prepare_request(keys_version)
-        request = Net::HTTP::Get.new(URI("#{@access_token_url}/keys/#{keys_version}"))
+        keys_url = URI("#{@access_token_url}/keys/#{keys_version}")
+        request = Net::HTTP::Get.new(keys_url)
         request['Accept'] = 'application/json'
         request['User-Agent'] = user_agent_string
-        request['Authorization'] = retrieve.authorization_header
+        request['Authorization'] = retrieve.authorization_header(fully_qualified_url: keys_url)
         request
       end
 
