@@ -1,4 +1,6 @@
 # v2.5.0
+Add Consumer and Provider support for HMAC-SHA1 signatures.
+
 Added a Cerner::OAuth1a::Protocol.percent_encode method.
 
 Correctly percent encodes PLAINTEXT signature parts (client shared secret and token
