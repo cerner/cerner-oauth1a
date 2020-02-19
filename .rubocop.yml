@@ -131,6 +131,11 @@ Layout/LeadingEmptyLines:
   Enabled: true
 Layout/LeadingCommentSpace:
   Enabled: true
+Layout/LineLength:
+# Lines are allowed to be a maximum of 120 characters. However, it is suggested that, in practice,
+# line should be kept to a maximum of 100 for readability, especially within comments.
+  Enabled: true
+  Max: 120
 Layout/MultilineArrayBraceLayout:
   Enabled: true
 Layout/MultilineArrayLineBreaks:
@@ -389,9 +394,6 @@ Metrics/ClassLength:
   Enabled: false
 Metrics/CyclomaticComplexity:
   Enabled: false
-Metrics/LineLength:
-  Enabled: true
-  Max: 120
 Metrics/MethodLength:
   Enabled: false
 Metrics/ModuleLength:
@@ -429,6 +431,10 @@ Naming/MethodName:
   IgnoredPatterns:
     - 'do_GET'
     - 'do_POST'
+    - 'do_PUT'
+    - 'do_DELETE'
+    - 'do_HEAD'
+    - 'do_OPTIONS'
 Naming/MethodParameterName:
   Enabled: true
 Naming/PredicateName:
@@ -533,8 +539,6 @@ Style/BeginBlock:
 Style/BlockComments:
   Enabled: true
 Style/BlockDelimiters:
-  Enabled: true
-Style/BracesAroundHashParameters:
   Enabled: true
 Style/CaseEquality:
   Enabled: true
