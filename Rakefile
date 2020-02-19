@@ -8,8 +8,9 @@ require 'rdoc/task'
 CLEAN << 'build/coverage'
 CLEAN << 'build/doc'
 CLEAN << 'pkg'
-CLOBBER << 'build/examples.txt'
+CLOBBER << 'build'
 CLOBBER << 'tmp'
+CLOBBER << 'Gemfile.lock'
 
 # configure rdoc task
 RDoc::Task.new do |rdoc|

@@ -16,7 +16,7 @@ module Cerner
       # Internal: Gets the singleton instance.
       def self.instance
         @cache_instance_lock.synchronize do
-          return @cache_instance if @cache_instance
+          return @cache_instance if instance_variable_defined?(:@cache_instance) && @cache_instance
 
           @cache_instance = DefaultCache.new(max: 50)
         end

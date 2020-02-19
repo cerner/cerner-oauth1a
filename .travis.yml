@@ -12,6 +12,11 @@ matrix:
     - name: "Ruby 2.6.x with JIT"
       rvm: ruby-2.6
       env: RUBYOPT="--jit"
+    - name: "Ruby 2.7.x"
+      rvm: ruby-2.7
+    - name: "Ruby 2.7.x with JIT"
+      rvm: ruby-2.7
+      env: RUBYOPT="--jit"
     - name: "Ruby HEAD"
       rvm: ruby-head
     - name: "Ruby HEAD with JIT"
