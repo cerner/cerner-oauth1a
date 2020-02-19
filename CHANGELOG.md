@@ -1,3 +1,6 @@
+# v2.5.1
+Address `instance variable @cache_instance not initialized` warning
+
 # v2.5.0
 Add Consumer and Provider support for HMAC-SHA1 signatures.
 
