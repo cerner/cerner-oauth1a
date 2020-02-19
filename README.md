@@ -169,7 +169,7 @@ This library can be installed using the `gem` command or added to a Gemfile for 
 
 # Building
 
-This project is built using Ruby 2.4+, Rake and Bundler. RSpec is used for unit tests and SimpleCov
+This project is built using Ruby 2.5+, Rake and Bundler. RSpec is used for unit tests and SimpleCov
 is utilized for test coverage. RuboCop is used to monitor the lint and style.
 
 ## Setup
