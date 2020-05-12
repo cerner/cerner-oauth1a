@@ -3,6 +3,8 @@ before_install: gem install bundler
 script: bin/rspec
 matrix:
   include:
+    - name: "Ruby 2.4.x"
+      rvm: ruby-2.4
     - name: "Ruby 2.5.x"
       rvm: ruby-2.5
     - name: "Ruby 2.6.x"

@@ -2,7 +2,7 @@ require:
   - rubocop-performance
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.4
   DisabledByDefault: true
   Exclude:
     - 'bin/{bundle,bundle-audit,bundler-audit,rake,rspec,rubocop}'
