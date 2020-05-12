@@ -49,6 +49,10 @@ module Cerner
       #   Cerner::OAuth1a::Protocol.parse_www_authenticate_header(header)
       #   # => {:realm=>"https://test.host", :oauth_problem=>"token_expired"}
       #
+      #   header = 'OAuth realm="https://test.host", oauth_problem=token_expired'
+      #   Cerner::OAuth1a::Protocol.parse_www_authenticate_header(header)
+      #   # => {:realm=>"https://test.host", :oauth_problem=>"token_expired"}
+      #
       # Returns a Hash with symbolized keys of all of the parameters.
       def self.parse_authorization_header(value)
         params = {}

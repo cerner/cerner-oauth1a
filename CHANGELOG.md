@@ -1,3 +1,7 @@
+# v2.5.2
+Adjust `Cerner::OAuth1a::Protocol.parse_www_authenticate_header` to handle parameters
+that are either tokens or quoted strings.
+
 # v2.5.1
 Address `instance variable @cache_instance not initialized` warning
 
