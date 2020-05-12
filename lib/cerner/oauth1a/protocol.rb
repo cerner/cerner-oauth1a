@@ -49,6 +49,10 @@ module Cerner
       #   Cerner::OAuth1a::Protocol.parse_www_authenticate_header(header)
       #   # => {:realm=>"https://test.host", :oauth_problem=>"token_expired"}
       #
+      #   header = 'OAuth realm="https://test.host", oauth_problem=token_expired'
+      #   Cerner::OAuth1a::Protocol.parse_www_authenticate_header(header)
+      #   # => {:realm=>"https://test.host", :oauth_problem=>"token_expired"}
+      #
       # Returns a Hash with symbolized keys of all of the parameters.
       def self.parse_authorization_header(value)
         params = {}
@@ -57,10 +61,18 @@ module Cerner
         value = value.strip
         return params unless value.size > 6 && value[0..5].casecmp?('OAuth ')
 
-        value.scan(/([^,\s=]*)=\"([^\"]*)\"/).each do |pair|
-          k = URI.decode_www_form_component(pair[0])
-          v = URI.decode_www_form_component(pair[1])
-          params[k.to_sym] = v
+        # trim off 'OAuth ' prefix
+        value = value[6..-1]
+
+        # split value on comma separators
+        value.split(/,\s*/).each do |kv_part|
+          # split each part on '=' separator
+          key, value = kv_part.split('=')
+          key = URI.decode_www_form_component(key)
+          # trim off surrounding double quotes, if they exist
+          value = value[1..-2] if value.start_with?('"') && value.end_with?('"')
+          value = URI.decode_www_form_component(value)
+          params[key.to_sym] = value
         end
 
         params

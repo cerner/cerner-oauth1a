@@ -118,11 +118,43 @@ RSpec.describe(Cerner::OAuth1a::Protocol) do
     end
   end
 
+  describe '.parse_www_authenticate_header' do
+    it 'returns params when both are quoted-string' do
+      expect(
+        Cerner::OAuth1a::Protocol.parse_www_authenticate_header(
+          'OAuth realm="https://oauth-api.cerner.com",oauth_problem="token_expired"'
+        )
+      ).to(eq(realm: 'https://oauth-api.cerner.com', oauth_problem: 'token_expired'))
+    end
+
+    it 'returns params when one is quoted-string and one is token' do
+      expect(
+        Cerner::OAuth1a::Protocol.parse_www_authenticate_header(
+          'OAuth realm="https://oauth-api.cerner.com",oauth_problem=token_expired'
+        )
+      ).to(eq(realm: 'https://oauth-api.cerner.com', oauth_problem: 'token_expired'))
+    end
+
+    it 'returns params when there is whitespace' do
+      expect(
+        Cerner::OAuth1a::Protocol.parse_www_authenticate_header(
+          'OAuth realm="https://oauth-api.cerner.com", oauth_problem=token_expired'
+        )
+      ).to(eq(realm: 'https://oauth-api.cerner.com', oauth_problem: 'token_expired'))
+    end
+
+    it 'returns param when it is token' do
+      expect(
+        Cerner::OAuth1a::Protocol.parse_www_authenticate_header('OAuth oauth_problem=token_expired')
+      ).to(eq(oauth_problem: 'token_expired'))
+    end
+  end
+
   describe '.parse_authorization_header' do
     context 'alias form' do
       it 'returns Hash with encoded values' do
         expect(
-          Cerner::OAuth1a::Protocol.parse_authorization_header('OAuth oauth_token="token%23token"')
+          Cerner::OAuth1a::Protocol.parse_www_authenticate_header('OAuth oauth_token="token%23token"')
         ).to(eq(oauth_token: 'token#token'))
       end
     end
