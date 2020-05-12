@@ -123,6 +123,10 @@ Layout/HeredocIndentation:
   Enabled: true
 Layout/IndentationConsistency:
   Enabled: true
+Layout/IndentationStyle:
+  Enabled: true
+  EnforcedStyle: spaces
+  IndentationWidth: 2
 Layout/IndentationWidth:
   Enabled: true
 Layout/InitialIndentation:
@@ -210,8 +214,6 @@ Layout/SpaceInsideReferenceBrackets:
   Enabled: true
 Layout/SpaceInsideStringInterpolation:
   Enabled: true
-Layout/Tab:
-  Enabled: true
 Layout/TrailingEmptyLines:
   Enabled: true
 Layout/TrailingWhitespace:
@@ -257,8 +259,6 @@ Lint/EmptyExpression:
 Lint/EmptyInterpolation:
   Enabled: true
 Lint/EmptyWhen:
-  Enabled: true
-Lint/EndInMethod:
   Enabled: true
 Lint/EnsureReturn:
   Enabled: true

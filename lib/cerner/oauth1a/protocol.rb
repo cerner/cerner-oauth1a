@@ -62,7 +62,7 @@ module Cerner
         return params unless value.size > 6 && value[0..5].casecmp?('OAuth ')
 
         # trim off 'OAuth ' prefix
-        value = value[6..]
+        value = value[6..-1]
 
         # split value on comma separators
         value.split(/,\s*/).each do |kv_part|
