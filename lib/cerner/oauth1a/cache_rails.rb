@@ -19,6 +19,7 @@ module Cerner
       #
       # rails_cache - An instance of ActiveSupport::Cache::Store.
       def initialize(rails_cache)
+        super()
         @cache = rails_cache
       end
 
