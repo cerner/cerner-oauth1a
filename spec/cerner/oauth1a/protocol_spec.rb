@@ -13,6 +13,10 @@ RSpec.describe(Cerner::OAuth1a::Protocol) do
     it 'encodes spaces with %20' do
       expect(Cerner::OAuth1a::Protocol.percent_encode('something here')).to(eq('something%20here'))
     end
+
+    it 'encodes + with %2B' do
+      expect(Cerner::OAuth1a::Protocol.percent_encode('something+here')).to(eq('something%2Bhere'))
+    end
   end
 
   describe '.realm_for' do
