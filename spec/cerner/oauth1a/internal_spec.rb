@@ -39,8 +39,8 @@ RSpec.describe(Cerner::OAuth1a::Internal) do
       ).to(eq(false))
     end
 
-    # it 'returns false when string bytesize does not match' do
-    #   expect(Cerner::OAuth1a::Internal.constant_time_compare('1', '12')).to(eq(false))
-    # end
+    it 'returns false when string bytesize does not match' do
+      expect(Cerner::OAuth1a::Internal.constant_time_compare('1', '12')).to(eq(false))
+    end
   end
 end
