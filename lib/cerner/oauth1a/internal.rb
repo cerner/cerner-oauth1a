@@ -61,6 +61,35 @@ module Cerner
       def self.generate_timestamp
         Time.now.to_i
       end
+
+      # Internal: Compares two Strings using a constant time algorithm to protect against timing
+      # attacks.
+      #
+      # left  - The left String
+      # right - The right String
+      #
+      # Return true if left and right match, false otherwise.
+      def self.constant_time_compare(left, right)
+        max_size = [left.bytesize, right.bytesize].max
+        # convert left and right to array of bytes (Integer)
+        left = left.unpack('C*')
+        right = right.unpack('C*')
+
+        # if either array is not the max size, expand it with zeros
+        # having equal arrays keeps the algorithm execution time constant
+        left = left.fill(0, left.size, max_size - left.size) if left.size < max_size
+        right = right.fill(0, right.size, max_size - right.size) if right.size < max_size
+
+        result = 0
+        left.each_with_index do |left_value, i|
+          # XOR the two bytes, if equal, the operation is 0
+          # OR the XOR operation with the previous result
+          result |= left_value ^ right[i]
+        end
+
+        # if every comparison resuled in 0, then left and right are equal
+        result.zero?
+      end
     end
   end
 end

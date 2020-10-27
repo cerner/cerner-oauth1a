@@ -474,7 +474,7 @@ module Cerner
           )
         end
 
-        return if @signature == expected_signature
+        return if Internal.constant_time_compare(@signature, expected_signature)
 
         raise OAuthError.new('signature is not valid', nil, 'signature_invalid', nil, @realm)
       end
