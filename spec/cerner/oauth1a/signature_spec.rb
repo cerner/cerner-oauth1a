@@ -3,6 +3,7 @@
 require 'spec_helper'
 
 require 'cerner/oauth1a/signature'
+require 'digest'
 
 RSpec.describe(Cerner::OAuth1a::Signature) do
   describe '.sign_via_hmacsha1' do
