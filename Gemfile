@@ -12,4 +12,4 @@ gem 'rdoc', '~> 6.2'
 gem 'rspec', '~> 3.9'
 gem 'rubocop', '~> 1.0', require: false
 gem 'rubocop-performance', '~> 1.8', require: false
-gem 'simplecov', '~> 0.19', require: false
+gem 'simplecov', '~> 0.18', require: false
