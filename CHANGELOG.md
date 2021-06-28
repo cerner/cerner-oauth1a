@@ -1,3 +1,8 @@
+# v2.6.0
+Replace invalid usage of `oauth_parameters_rejected` and `oauth_parameters_absent`
+OAuth problem values with correct values `parameter_rejected` and `parameter_absent`
+when reporting certain errors.
+
 # v2.5.3
 Use a constant time compare algorithm for checking a signature
 
