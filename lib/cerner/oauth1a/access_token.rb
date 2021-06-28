@@ -368,7 +368,7 @@ module Cerner
       # Internal: Used by #authenticate to verify the expiration time.
       def verify_expiration(expires_on)
         unless expires_on
-          raise OAuthError.new('token missing ExpiresOn', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
+          raise OAuthError.new('token missing ExpiresOn', nil, 'parameter_rejected', 'oauth_token', @realm)
         end
 
         expires_on = Internal.convert_to_time(time: expires_on, name: 'expires_on')
@@ -380,7 +380,7 @@ module Cerner
       # Internal: Used by #authenticate to load the keys
       def load_keys(access_token_agent, keys_version)
         unless keys_version
-          raise OAuthError.new('token missing KeysVersion', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
+          raise OAuthError.new('token missing KeysVersion', nil, 'parameter_rejected', 'oauth_token', @realm)
         end
 
         begin
@@ -389,7 +389,7 @@ module Cerner
           raise OAuthError.new(
             'token references invalid keys version',
             nil,
-            'oauth_parameters_rejected',
+            'parameter_rejected',
             'oauth_token',
             @realm
           )
@@ -400,16 +400,16 @@ module Cerner
       def verify_token(keys)
         return if keys.verify_rsasha1_signature(@token)
 
-        raise OAuthError.new('token is not authentic', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
+        raise OAuthError.new('token is not authentic', nil, 'parameter_rejected', 'oauth_token', @realm)
       end
 
       # Internal: Used by #authenticate to verify the request signature.
       def verify_signature(keys:, hmac_secrets:, http_method:, fully_qualified_url:, request_params:)
         unless @signature
-          raise OAuthError.new('missing signature', nil, 'oauth_parameters_absent', 'oauth_signature', @realm)
+          raise OAuthError.new('missing signature', nil, 'parameter_absent', 'oauth_signature', @realm)
         end
         unless hmac_secrets
-          raise OAuthError.new('missing HMACSecrets', nil, 'oauth_parameters_rejected', 'oauth_token', @realm)
+          raise OAuthError.new('missing HMACSecrets', nil, 'parameter_rejected', 'oauth_token', @realm)
         end
 
         begin
@@ -418,7 +418,7 @@ module Cerner
           raise OAuthError.new(
             "unable to decrypt HMACSecrets: #{e.message}",
             nil,
-            'oauth_parameters_rejected',
+            'parameter_rejected',
             'oauth_token',
             @realm
           )
